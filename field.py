@@ -41,8 +41,8 @@ class Field:
                                 seg_start: np.ndarray,
                                 seg_end: np.ndarray,
                                 range: float,
-                                use_absorbers: bool) -> bool:
-        """Find if the line segment specified is near to any absorbing or emitting field elements
+                                use_absorbers: bool) -> Optional[ElementBase]:
+        """Find if the line segment specified is near to any absorbing or emitting field elements and returns one such element
 
 Parameters:
 
@@ -53,6 +53,10 @@ Parameters:
     range - how far away the absorbing element can be
 
     use_absorbers - if True then the function will look for a nearby emitter, if False then it will look for absorbers
+
+Returns:
+
+    element - any element at the specified distance from the line segment or None if one couldn't be found
 """
 
         for ele in self.__elements:
@@ -67,9 +71,9 @@ Parameters:
             )
 
             if dist <= range:
-                return True
+                return ele
 
-        return False
+        return None
 
     def trace_field_line(self,
                          start: np.ndarray,
@@ -102,7 +106,6 @@ Parameters:
 
         for i in range(0, max_points-1):
 
-            end_index = i
             curr = points[i]
 
             # Calculate direction to move in
@@ -117,12 +120,16 @@ Parameters:
 
             new = curr + (move_dir * step_distance)
             points[i+1] = new
+            end_index = i+1
 
             # Check if passed close enough to an absorber to stop the line
 
-            if self.line_seg_nearby_element(curr, new, element_stop_distance, use_absorbers=positive):
+            nearby_ele = self.line_seg_nearby_element(curr, new, element_stop_distance, use_absorbers=positive)
+
+            if nearby_ele:
+                points[i+1] = nearby_ele.pos
                 break
 
         # Return the output (trim end if didn't get to maximum number of points)
 
-        return points[:end_index]
+        return points[:end_index+1]
