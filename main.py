@@ -1,4 +1,3 @@
-from typing import Iterator, Tuple, Union, List
 import pyglet
 import numpy as np
 from field import Field
@@ -42,14 +41,28 @@ class MainWindow(pyglet.window.Window):
         for i in range(phi.shape[0]):
 
             field_line = field.trace_field_line(
+                np.array([400+dx[i], 200+dy[i]]),
+                500,
+                False
+            )
+
+            self.__add_field_line(self.round_float_pos(field_line))
+
+            field_line = field.trace_field_line(
                 np.array([200+dx[i], 200+dy[i]]),
-                500
+                500,
+                True
             )
 
             self.__add_field_line(self.round_float_pos(field_line))
 
     def __add_field_line(self,
                          points: np.ndarray) -> None:
+
+        # If not enough points then don't draw anything
+
+        if points.shape[0] <= 1:
+            return
 
         # Draw parts of line
 

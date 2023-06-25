@@ -4,7 +4,7 @@ import numpy as np
 import vectors
 
 FIELD_LINE_TRACE_DEFAULT_STEP = 5
-FIELD_LINE_TRACE_DEFAULT_ABSORBER_STOP_DISTANCE = 1
+FIELD_LINE_TRACE_DEFAULT_ELEMENT_STOP_DISTANCE = 1
 
 class ElementNotInFieldException(Exception): pass
 
@@ -37,11 +37,12 @@ class Field:
     def grad(self, pos: np.ndarray) -> np.ndarray:
         return vectors.grad(self.evaluate, pos)
 
-    def line_seg_nearby_absorber(self,
-                                 seg_start: np.ndarray,
-                                 seg_end: np.ndarray,
-                                 range: float) -> bool:
-        """Find if the line segment specified is near to any absorbing field elements
+    def line_seg_nearby_element(self,
+                                seg_start: np.ndarray,
+                                seg_end: np.ndarray,
+                                range: float,
+                                use_absorbers: bool) -> bool:
+        """Find if the line segment specified is near to any absorbing or emitting field elements
 
 Parameters:
 
@@ -50,11 +51,13 @@ Parameters:
     seg_end - the ennding position vector of the line segment
 
     range - how far away the absorbing element can be
+
+    use_absorbers - if True then the function will look for a nearby emitter, if False then it will look for absorbers
 """
 
         for ele in self.__elements:
 
-            if not ele.absorbs:
+            if ele.absorbs != use_absorbers:
                 continue
 
             dist = vectors.line_seg_distance_to_point(
@@ -69,10 +72,11 @@ Parameters:
         return False
 
     def trace_field_line(self,
-                           start: np.ndarray,
-                           max_points: int,
-                           step_distance: float = FIELD_LINE_TRACE_DEFAULT_STEP,
-                           absorber_stop_distance: float = FIELD_LINE_TRACE_DEFAULT_ABSORBER_STOP_DISTANCE) -> np.ndarray:
+                         start: np.ndarray,
+                         max_points: int,
+                         positive: bool,
+                         step_distance: float = FIELD_LINE_TRACE_DEFAULT_STEP,
+                         element_stop_distance: float = FIELD_LINE_TRACE_DEFAULT_ELEMENT_STOP_DISTANCE) -> np.ndarray:
         """Traces a field line starting at a point and following the field for a specified distance or until reaching an absorber field element
 
 Parameters:
@@ -83,10 +87,12 @@ Parameters:
 
     max_points - the maximum number of points to make the field line. Will stop the line after this many points
 
-    step_distance - how far to step at each point of tracing the field line
-"""
+    positive - whether to trace the line in the "positive" direction (from positive to negative) instead
 
-        # TODO - need to trace field lines backwards as well as forwards so they can be started from an absorber
+    step_distance - how far to step at each point of tracing the field line
+
+    element_stop_distance - if the line gets this close to a complementary field element then it will stop at that point
+"""
 
         # Initialise output array with the maximum number of possible points needed
 
@@ -102,7 +108,10 @@ Parameters:
             # Calculate direction to move in
 
             grad = self.grad(curr)
-            move_dir = -(grad / np.linalg.norm(grad))  # move_dir is the normalized grad in the opposite direction
+
+            move_dir = grad / np.linalg.norm(grad)
+            if positive:
+                move_dir *= -1
 
             # Store the next point
 
@@ -111,7 +120,7 @@ Parameters:
 
             # Check if passed close enough to an absorber to stop the line
 
-            if self.line_seg_nearby_absorber(curr, new, absorber_stop_distance):
+            if self.line_seg_nearby_element(curr, new, element_stop_distance, use_absorbers=positive):
                 break
 
         # Return the output (trim end if didn't get to maximum number of points)
