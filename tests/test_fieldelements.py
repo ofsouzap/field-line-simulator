@@ -2,53 +2,58 @@ import unittest
 import numpy as np
 from element_base import ElementBase
 from point_source import PointSource
+from _test_util import *
 
-class TestPointSource(unittest.TestCase):
+class TestPointSource(ArrayComparingTest):
 
     def test_field_at_points_positive(self):
 
         source = PointSource(np.array([3, 4]), 25)
 
-        self.assertAlmostEqual(
-            source.get_field_at(np.array([0, 0])),
-            1
-        )
+        inps = np.array([
+            [0, 0],
+            [6, 8],
+            [1, 2],
+            [np.inf, np.inf],
+            [np.inf, -np.inf],
+            [-np.inf, np.inf],
+            [-np.inf, -np.inf]
+        ])
 
-        self.assertAlmostEqual(
-            source.get_field_at(np.array([6, 8])),
-            1
-        )
+        exps = np.array([
+            1.0,
+            1.0,
+            3.125,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ])
 
-        self.assertAlmostEqual(
-            source.get_field_at(np.array([1, 2])),
-            3.125
-        )
+        outs = source.get_field_at(inps)
 
-        self.assertAlmostEqual(
-            source.get_field_at(np.array([np.inf, np.inf])),
-            0
-        )
+        self.compare_arrs(outs, exps)
 
     def test_field_at_points_negative(self):
 
         source = PointSource(np.array([3, 4]), -25)
 
-        self.assertAlmostEqual(
-            source.get_field_at(np.array([0, 0])),
-            -1
-        )
+        inps = np.array([
+            [0, 0],
+            [6, 8],
+            [1, 2],
+            [np.inf, np.inf],
+            [np.inf, -np.inf],
+            [-np.inf, np.inf],
+            [-np.inf, -np.inf]
+        ])
 
-        self.assertAlmostEqual(
-            source.get_field_at(np.array([6, 8])),
-            -1
-        )
-
-        self.assertAlmostEqual(
-            source.get_field_at(np.array([1, 2])),
-            -3.125
-        )
-
-        self.assertAlmostEqual(
-            source.get_field_at(np.array([np.inf, np.inf])),
-            0
-        )
+        exps = np.array([
+            -1.0,
+            -1.0,
+            -3.125,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ])

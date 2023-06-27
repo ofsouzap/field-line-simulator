@@ -34,5 +34,20 @@ class ElementBase(ABC):
         return self._absorber
 
     @abstractmethod
-    def get_field_at(self, pos: np.ndarray) -> float:
+    def get_field_at(self, poss: np.ndarray) -> np.ndarray:
+        """Gets the value of the element's field at the point or points given
+
+Parameters:
+
+    poss - a 2D array of position vectors for the positions to evaluate the field at
+
+Returns:
+
+    values - a 1D array containing the values of the field at the requested positions
+"""
+        pass
+
+    @abstractmethod
+    def find_line_seg_nearest_point(self, seg_starts: np.ndarray, seg_ends: np.ndarray) -> np.ndarray:
+        """Find the nearest points of the element to the provided line segments"""
         pass

@@ -2,6 +2,7 @@ import pyglet
 import numpy as np
 from field import Field
 from point_source import PointSource
+from vectors import EPS
 
 
 WINDOW_TITLE = "Field Line Simulator"
@@ -34,27 +35,27 @@ class MainWindow(pyglet.window.Window):
 
             field.add_element(PointSource(np.array([s[0], s[1]]), s[2]))
 
-        phi = np.linspace(0, 2*np.pi, 16, endpoint=False)
-        dx = np.cos(phi)
-        dy = np.sin(phi)
+        phi = np.linspace(0, 2*np.pi, 24, endpoint=False)
+        dx = np.cos(phi) * EPS
+        dy = np.sin(phi) * EPS
 
-        for i in range(phi.shape[0]):
+        for source in sources:
 
-            field_line = field.trace_field_line(
-                np.array([400+dx[i], 200+dy[i]]),
+            line_starts = np.dstack((dx+source[0], dy+source[1]))[0]
+            positives = np.repeat(source[2] > 0, line_starts.shape[0])
+
+            field_lines = field.trace_field_lines(
+                line_starts,
                 500,
-                False
+                positives
             )
 
-            self.__add_field_line(self.round_float_pos(field_line))
+            self.__add_field_lines(field_lines)
 
-            field_line = field.trace_field_line(
-                np.array([200+dx[i], 200+dy[i]]),
-                500,
-                True
-            )
-
-            self.__add_field_line(self.round_float_pos(field_line))
+    def __add_field_lines(self,
+                          lines: np.ndarray) -> None:
+        for points in lines:
+            self.__add_field_line(points)
 
     def __add_field_line(self,
                          points: np.ndarray) -> None:
@@ -69,6 +70,10 @@ class MainWindow(pyglet.window.Window):
         prev = points[0]
 
         for curr in points[1:]:
+
+            # If point is repeated (probably meaning the line was clipped) then stop drawing
+            if np.all(np.isclose(prev, curr)):
+                break 
 
             line = pyglet.shapes.Line(
                 prev[0], prev[1],
