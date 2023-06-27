@@ -27,7 +27,11 @@ class PointSource(ElementBase):
 
         dists = vectors.magnitudes(poss - self.pos)
 
-        values = np.divide(self.strength, dists*dists)
+        values = np.where(
+            np.isclose(dists, 0),
+            np.repeat(np.inf, dists.shape[0]),
+            np.divide(self.strength, dists*dists)
+        )
 
         return values
 

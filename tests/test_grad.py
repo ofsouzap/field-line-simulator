@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from vectors import grad
+from vectors import grad, sqr_magnitudes
 from _test_util import *
 
 class TestGrad(ArrayComparingTest):
@@ -65,3 +65,28 @@ class TestGrad(ArrayComparingTest):
             np.array([-1, 1]),
             (points.shape[0], 1)
             ))
+
+    def test_inf_field(self):
+
+        field_func = lambda rs: np.repeat(np.inf, rs.shape[0])
+
+        points = np.mgrid[-20:20:np.pi, -20:20:np.pi].reshape(2,-1).T
+
+        self._test_grad_value(field_func, points, np.tile(
+            np.array([0, 0]),
+            (points.shape[0], 1)
+            ))
+
+    def test_singularity(self):
+
+        field_func = lambda rs: np.where(
+            sqr_magnitudes(rs) == 0,
+            np.repeat(np.inf, rs.shape[0]),
+            np.reciprocal(sqr_magnitudes(rs))
+        )
+
+        points = np.array([[0, 0]])
+
+        exps = np.array([[0, 0]])
+
+        self._test_grad_value(field_func, points, exps)

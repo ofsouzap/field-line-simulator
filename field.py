@@ -1,4 +1,4 @@
-from typing import List, Tuple, Iterator
+from typing import List, Tuple, Optional
 from element_base import ElementBase
 import numpy as np
 import vectors
@@ -66,7 +66,7 @@ Returns:
         assert use_absorbers.ndim == 1, "Invalid use_absorbers dimensionality"
 
         out_sqr_distances = np.inf * np.ones(shape=(seg_starts.shape[0],), dtype=seg_starts.dtype)
-        out_positions = np.empty_like(seg_starts)
+        out_positions = np.zeros_like(seg_starts)
 
         for ele in self.__elements:  # Iterate through each field element
 
@@ -110,7 +110,8 @@ Returns:
                           max_points: int,
                           positives: np.ndarray,
                           step_distance: float = FIELD_LINE_TRACE_DEFAULT_STEP,
-                          element_stop_distance: float = FIELD_LINE_TRACE_DEFAULT_ELEMENT_STOP_DISTANCE) -> np.ndarray:
+                          element_stop_distance: float = FIELD_LINE_TRACE_DEFAULT_ELEMENT_STOP_DISTANCE,
+                          clip_ranges: Optional[np.ndarray] = None) -> np.ndarray:
         """Traces field lines starting at some position vectors and following the field for a specified distance or until reaching an absorber/emitter field element
 
 Parameters:
@@ -125,6 +126,9 @@ Parameters:
 
     element_stop_distance - if the lines gets this close to a complementary field element then it will stop at that point
 
+    clip_ranges - a 2D array of shape (N,2) where N is the number of dimensions of the space of the field. \
+Each pair describes the range of values outside which the field lines will be clipped
+
 Returns:
 
     lines - a 3D array where each axis 0 is each field line, axis 1 is the positions of each point of each field line and axis 2 is the components of these positions. \
@@ -134,6 +138,11 @@ When a field line is ended early, the final value before clipping is propagated 
         assert starts.ndim == 2, "Invalid starting point array dimensionality"
         assert positives.ndim == 1, "Invalid positives array dimensionality"
         assert starts.shape[0] == positives.shape[0], "Starting point and positives arrays are not of matching shapes"
+
+        if clip_ranges is not None:
+            assert clip_ranges.ndim == 2, "Invalid clip_ranges dimensionality"
+            assert np.all(clip_ranges[:, 0] <= clip_ranges[:, 1]), "clip_ranges lower bounds must not be greater than the upper bounds"
+            assert clip_ranges.shape[0] == starts.shape[1], "clip_ranges doesn't have same number of vector components as start positions"
 
         line_count = starts.shape[0]  # Number of lines being traced
         dim = starts.shape[1]  # Dimensions of the space
@@ -146,30 +155,39 @@ When a field line is ended early, the final value before clipping is propagated 
 
         lines[:, 0] = starts
 
-        active_mask = np.ones(shape=(line_count), dtype=bool)  # Which lines are still being generated
+        active_mask = np.ones(shape=(line_count,), dtype=bool)  # Which lines are still being generated
 
         for t in range(0, max_points-1):
 
-            # Propagate existing values for inactive lines
-
-            lines[np.logical_not(active_mask), t+1] = lines[np.logical_not(active_mask), t]
-
             # Handle active lines
 
-            curr_poss = lines[active_mask, t]  # R^(line_count)x(dim)
+            curr_poss = lines[:, t]  # R^(line_count)x(dim)
 
             # Calculate directions to move in
 
             grads = self.grad(curr_poss)  # R^(line_count)x(dim)
 
+            active_mask = np.logical_and(active_mask, np.logical_not(np.all(np.isclose(grads, 0.0), axis=1)))  # Make inactive lines found to be at stationary points
+
             move_dir = grads / vectors.magnitudes(grads)[:, np.newaxis]  # R^(line_count)x(dim)
 
             move_dir[positives] *= -1  # Invert the direction of the positive lines' move directions
 
-            # Find and store the next points
+            # Find and store the next points or propagate old points
 
             new_poss = curr_poss + (move_dir * step_distance)  # R^(line_count)x(dim)
-            lines[active_mask, t+1] = new_poss
+
+            active_mask_mat = np.tile(active_mask, (starts.shape[1], 1)).T
+
+            lines[:, t+1] = np.where(
+                active_mask_mat,
+                new_poss,
+                lines[:, t]
+            )
+
+            del active_mask_mat
+
+            # lines[active_mask, t+1] = new_poss  # TODO - this doesn't work as I've changed active_mask since getting curr_poss using that mask
 
             # Check nearest appropriate field elements of active lines
 
@@ -177,17 +195,28 @@ When a field line is ended early, the final value before clipping is propagated 
                 lines[:, t],  # The old positions
                 lines[:, t+1],  # The new positions
                 positives[:]  # Which lines are positive
-            )  # TODO - don't calculate these values for all lines, only do them for the active lines
+            )  # TODO - don't calculate these values for all lines, only do them for the active lines. Probably replace the below logic to use np.where instead of arr[mask] syntax
 
             # Create a mask for lines that are newly-terminated
 
             point_close_mask = nearest_sqr_distances <= element_stop_distance
-            newly_terminated_mask = np.logical_and(point_close_mask, np.logical_not(active_mask))
+            newly_terminated_mask = np.logical_and(point_close_mask, active_mask)
 
             # Replace the ending positions of the newly-terminated lines and set them as inactive
 
             lines[newly_terminated_mask, t+1] = nearest_poss[newly_terminated_mask]
-            active_mask = np.logical_or(active_mask, newly_terminated_mask)
+            active_mask = np.logical_and(active_mask, np.logical_not(newly_terminated_mask))
+
+            # Clip any lines outside of the allowed range
+
+            if clip_ranges is not None:
+
+                within_lower_mask = np.all(lines[:, t+1] >= clip_ranges[:, 0], axis=1)
+                within_upper_mask = np.all(lines[:, t+1] <= clip_ranges[:, 1], axis=1)
+
+                within_clip_bounds_mask = np.logical_and(within_lower_mask, within_upper_mask)
+
+                active_mask = np.logical_and(active_mask, within_clip_bounds_mask)
 
         # Return the output
 

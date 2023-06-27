@@ -119,7 +119,7 @@ Parameters:
     )
 
 def grad(field_func: Callable[[np.ndarray], np.ndarray], poss: np.ndarray) -> np.ndarray:
-    """Approximates the gradient vector of a scalar field at some positions
+    """Approximates the gradient vector of a scalar field at some positions. At singularities, a grad value of 0 is used
 
 Parameters:
 
@@ -144,7 +144,11 @@ Parameters:
 
         avg_grads = np.average(np.array([right_grads, left_grads]), axis=0)
 
-        grad[:, i] = avg_grads
+        grad[:, i] = np.where(
+            np.isinf(field_func(poss)),
+            np.zeros(shape=(avg_grads.shape[0],)),
+            avg_grads
+        )
 
     return grad
 

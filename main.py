@@ -24,9 +24,17 @@ class MainWindow(pyglet.window.Window):
 
         field = Field()
 
+        clip_ranges = np.array([
+            [0, width],
+            [0, height]
+        ])
+
         sources = [
             (200, 200, 5),
-            (400, 200, -5)
+            (400, 200, -5),
+            (300, 200, 1),
+            (300, 300, -1),
+            (0, 0, 100)
         ]
 
         for i, s in enumerate(sources):
@@ -39,6 +47,9 @@ class MainWindow(pyglet.window.Window):
         dx = np.cos(phi) * EPS
         dy = np.sin(phi) * EPS
 
+        # dx = np.array([[200.1, 0.0]])
+        # dy = np.array([[0.0, 0.0]])
+
         for source in sources:
 
             line_starts = np.dstack((dx+source[0], dy+source[1]))[0]
@@ -47,7 +58,8 @@ class MainWindow(pyglet.window.Window):
             field_lines = field.trace_field_lines(
                 line_starts,
                 500,
-                positives
+                positives,
+                clip_ranges=clip_ranges
             )
 
             self.__add_field_lines(field_lines)
