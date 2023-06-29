@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 import pyglet
 import numpy as np
 from field import Field
