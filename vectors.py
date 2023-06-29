@@ -4,6 +4,26 @@ import vectors
 
 EPS = 1e-6
 
+def many_dot(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Takes two arrays of vectors and computes a result array comprising of the dot (aka scalar) products of the corresponding pairs of the vectors
+
+Parameters:
+
+    a - a NxM array of vectors
+
+    b - a NxM array of vectors
+
+Returns:
+
+    dots - a N-element 1D vector such that dots[i] = a[i] . b[i] where '.' represents the dot (aka scalar) product of two vectors
+"""
+
+    assert a.ndim == b.ndim == 2, "Incorrect input dimensionality"
+    assert a.shape[0] == b.shape[0], "Inputs have different numbers of elements"
+    assert a.shape[1] == b.shape[1], "Inputs' vectors have different numbers of components"
+
+    return np.diagonal(a @ b.T)
+
 def line_sqr_distance_to_point(line_as: np.ndarray, line_bs: np.ndarray, rs: np.ndarray) -> np.ndarray:
     """Calculates the minimum distance between multiple points and corresponding infinite lines"""
 
@@ -16,7 +36,7 @@ def line_sqr_distance_to_point(line_as: np.ndarray, line_bs: np.ndarray, rs: np.
     line_dirs = vecs_se / vectors.magnitudes(vecs_se)[:, np.newaxis]  # The normalised direction vectors of the lines
     vecs_sr = rs - line_as  # start -> r
 
-    dots = np.diagonal(vecs_sr @ line_dirs.T)
+    dots = many_dot(vecs_sr, line_dirs)
 
     dists = vectors.sqr_magnitudes(vecs_sr - (dots[:, np.newaxis] * line_dirs))
 
@@ -56,8 +76,8 @@ Parameters:
 
     # Decide between the possible distance values
 
-    end_dots = np.diagonal(vecs_se @ vecs_er.T)
-    start_dots = np.diagonal(vecs_se @ vecs_sr.T)
+    end_dots = many_dot(vecs_se, vecs_er)
+    start_dots = many_dot(vecs_se, vecs_sr)
 
     return np.where(
         end_dots > 0,
@@ -98,12 +118,12 @@ Parameters:
     vecs_sr = rs - seg_starts  # start -> r
     vecs_er = rs - seg_ends  # end -> r
 
-    on_line_dots = np.diagonal(vecs_sr @ line_dirs.T)
+    on_line_dots = many_dot(vecs_sr, line_dirs)
 
     # Decide between the possible distance values
 
-    end_dots = np.diagonal(vecs_se @ vecs_er.T)
-    start_dots = np.diagonal(vecs_se @ vecs_sr.T)
+    end_dots = many_dot(vecs_se, vecs_er)
+    start_dots = many_dot(vecs_se, vecs_sr)
 
     end_dots_mat = np.tile(end_dots, (seg_starts.shape[1], 1)).T
     start_dots_mat = np.tile(start_dots, (seg_starts.shape[1], 1)).T
