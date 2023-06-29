@@ -134,6 +134,54 @@ Returns:
 
         return nexts
 
+    def __field_line_trace_single_iteration(self,
+                                            t: int,
+                                            lines: np.ndarray,
+                                            active_mask: np.ndarray,
+                                            positives: np.ndarray,
+                                            step_distance: float,
+                                            element_stop_distance: float,
+                                            clip_ranges: np.ndarray) -> None:
+
+        dim = lines.shape[2]
+
+        # Clip any lines outside of the allowed range and deactivate them
+
+        clip_mask = vectors.outside_bounds(lines[active_mask, t, :], clip_ranges)
+
+        # Deactivate lines that went too close to a field element
+
+        nearest_sqr_distances, nearest_poss = self.line_seg_nearest_element(
+            lines[active_mask, max(t-1, 0)],  # The old positions
+            lines[active_mask, t],  # The new positions
+            positives[active_mask]  # Which lines are positive
+        )
+
+        point_close_mask = nearest_sqr_distances <= element_stop_distance  # Which of the active lines have been deactivated
+
+        # Calculate next positions for active lines
+
+        active_curr_poss = lines[active_mask, t]  # R^(line_count)x(dim)
+        active_positives = positives[active_mask]  # {0,1}^(line_count)
+
+        active_next_poss = self.__line_trace_next_positions(active_curr_poss, active_positives, step_distance=step_distance)
+
+        # Apply effects of computations to active lines, inactive lines and the active mask
+
+        lines[active_mask, t+1, :] = np.where(
+            vectors.mat_mask(clip_mask, dim),
+            lines[active_mask, t, :],  # When line gets clipped this iteration
+            np.where(
+                vectors.mat_mask(point_close_mask, dim),
+                nearest_poss,  # When line reaches a field element this iteration
+                active_next_poss  # Normal behaviour, just continuing the line
+            )
+        )
+
+        lines[~active_mask, t+1, :] = lines[~active_mask, t, :]
+
+        active_mask[active_mask] = (~clip_mask) & (~point_close_mask)
+
     def trace_field_lines(self,
                           starts: np.ndarray,
                           max_points: int,
@@ -198,44 +246,17 @@ When a field line is ended early, the final value before clipping is propagated 
             if ~np.any(active_mask):
                 break
 
-            # Clip any lines outside of the allowed range and deactivate them
+            # Calculate next points on lines and find lines to become inactive
 
-            clip_mask = vectors.outside_bounds(lines[active_mask, t, :], clip_ranges)
-
-            # Deactivate lines that went too close to a field element
-
-            nearest_sqr_distances, nearest_poss = self.line_seg_nearest_element(
-                lines[active_mask, max(t-1, 0)],  # The old positions
-                lines[active_mask, t],  # The new positions
-                positives[active_mask]  # Which lines are positive
+            self.__field_line_trace_single_iteration(
+                t,
+                lines,
+                active_mask,
+                positives,
+                step_distance,
+                element_stop_distance,
+                clip_ranges
             )
-
-            point_close_mask = nearest_sqr_distances <= element_stop_distance  # Which of the active lines have been deactivated
-
-            # Calculate next positions for active lines
-
-            active_curr_poss = lines[active_mask, t]  # R^(line_count)x(dim)
-            active_positives = positives[active_mask]  # {0,1}^(line_count)
-
-            active_next_poss = self.__line_trace_next_positions(active_curr_poss, active_positives, step_distance=step_distance)
-
-            # lines[active_mask, t+1] = new_active_poss
-
-            # Apply effects of computations to active lines, inactive lines and the active mask
-
-            lines[active_mask, t+1, :] = np.where(
-                vectors.mat_mask(clip_mask, dim),
-                lines[active_mask, t, :],  # When line gets clipped this iteration
-                np.where(
-                    vectors.mat_mask(point_close_mask, dim),
-                    nearest_poss,  # When line reaches a field element this iteration
-                    active_next_poss  # Normal behaviour, just continuing the line
-                )
-            )
-
-            lines[~active_mask, t+1, :] = lines[~active_mask, t, :]
-
-            active_mask[active_mask] = (~clip_mask) & (~point_close_mask)
 
         # Return the output
 

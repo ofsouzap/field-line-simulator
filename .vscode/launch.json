@@ -5,6 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Profile Field Line Tracing",
+            "type": "python",
+            "request": "launch",
+            "module": "tests.profiling.profile_field_line_tracing",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Main (UNIX)",
             "type": "python",
             "request": "launch",
