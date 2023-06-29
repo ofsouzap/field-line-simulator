@@ -190,31 +190,33 @@ When a field line is ended early, the final value before clipping is propagated 
             # Check nearest appropriate field elements of active lines
 
             nearest_sqr_distances, nearest_poss = self.line_seg_nearest_element(
-                lines[:, t],  # The old positions
-                lines[:, t+1],  # The new positions
-                positives[:]  # Which lines are positive
-            )  # TODO - don't calculate these values for all lines, only do them for the active lines. Probably replace the below logic to use np.where instead of arr[mask] syntax
+                lines[active_mask, t],  # The old positions
+                lines[active_mask, t+1],  # The new positions
+                positives[active_mask]  # Which lines are positive
+            )
 
             # Create a mask for lines that are newly-terminated
+            # N.B. point_close_mask is relative to active_mask
 
-            point_close_mask = nearest_sqr_distances <= element_stop_distance
-            newly_terminated_mask = np.logical_and(point_close_mask, active_mask)
+            point_close_mask = nearest_sqr_distances <= element_stop_distance  # Which of the active lines have been deactivated
 
             # Replace the ending positions of the newly-terminated lines and set them as inactive
 
-            lines[newly_terminated_mask, t+1] = nearest_poss[newly_terminated_mask]
-            active_mask = np.logical_and(active_mask, np.logical_not(newly_terminated_mask))
+            lines[active_mask][point_close_mask, t+1] = nearest_poss[point_close_mask]
+            active_mask[active_mask][point_close_mask] = False
 
             # Clip any lines outside of the allowed range
 
             if clip_ranges is not None:
 
-                within_lower_mask = np.all(lines[:, t+1] >= clip_ranges[:, 0], axis=1)
-                within_upper_mask = np.all(lines[:, t+1] <= clip_ranges[:, 1], axis=1)
+                # N.B. these clipping masks are relative to active_mask
+
+                within_lower_mask = np.all(lines[active_mask, t+1] >= clip_ranges[:, 0], axis=1)
+                within_upper_mask = np.all(lines[active_mask, t+1] <= clip_ranges[:, 1], axis=1)
 
                 within_clip_bounds_mask = np.logical_and(within_lower_mask, within_upper_mask)
 
-                active_mask = np.logical_and(active_mask, within_clip_bounds_mask)
+                active_mask[active_mask][~within_clip_bounds_mask] = False
 
         # Return the output
 
