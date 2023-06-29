@@ -209,14 +209,11 @@ When a field line is ended early, the final value before clipping is propagated 
 
             if clip_ranges is not None:
 
-                # N.B. these clipping masks are relative to active_mask
+                # N.B. clip_mask is relative to active_mask
 
-                within_lower_mask = np.all(lines[active_mask, t+1] >= clip_ranges[:, 0], axis=1)
-                within_upper_mask = np.all(lines[active_mask, t+1] <= clip_ranges[:, 1], axis=1)
+                clip_mask = vectors.outside_bounds(lines[active_mask, t+1, :], clip_ranges)
 
-                within_clip_bounds_mask = np.logical_and(within_lower_mask, within_upper_mask)
-
-                active_mask[active_mask][~within_clip_bounds_mask] = False
+                active_mask[active_mask][clip_mask] = False
 
         # Return the output
 

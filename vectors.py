@@ -191,3 +191,28 @@ def magnitudes(vecs: np.ndarray) -> np.ndarray:
     """Takes a 2D array of vectors or a single vector and returns a 1D array of the vectors' magnitudes"""
 
     return np.sqrt(sqr_magnitudes(vecs))
+
+def outside_bounds(vecs: np.ndarray, bounds: np.ndarray) -> np.ndarray:
+    """Finds which vectors are outside of the provided bounds
+
+Parameters:
+
+    vecs - a NxM array of vectors to be considered
+
+    bounds - a Mx2 array where each pair is a lower and upper bound (respectively) for values of some component of the vectors
+
+Returns:
+
+    outside_bounds - a M-element 1D array of booleans describing which of the vectors in vecs have any component that is outside of its corresponding bound
+"""
+
+    assert vecs.ndim == bounds.ndim == 2, "Invalid input dimensionality"
+    assert vecs.shape[1] == bounds.shape[0], "Bounds and vectors don't have same number of components"
+    assert np.all(bounds[:, 0] <= bounds[:, 1]), "Bounds must have the first value lesser than or equal to the second value"
+
+    outside_of_lower = np.any(vecs[:, :] < bounds[:, 0], axis=1)
+    outside_of_upper = np.any(vecs[:, :] > bounds[:, 1], axis=1)
+
+    outside_bounds = np.logical_or(outside_of_lower, outside_of_upper)
+
+    return outside_bounds
