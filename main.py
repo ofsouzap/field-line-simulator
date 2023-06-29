@@ -29,40 +29,59 @@ class MainWindow(pyglet.window.Window):
             [0, height]
         ])
 
-        sources = [
-            (200, 200, 5),
-            (400, 200, -5),
-            (300, 200, 1),
-            (300, 300, -1),
-            (10, 0, 10)
-        ]
+        if False:
 
-        for i, s in enumerate(sources):
+            field.add_element(PointSource(np.array([300, 200]), 1))
+            line_starts = np.array([[350, 210]])
+            positives = np.array([True])
 
-            self.__dict__["source_"+str(i)] = pyglet.shapes.Circle(s[0], s[1], 3, batch=self.batch)
-
-            field.add_element(PointSource(np.array([s[0], s[1]]), s[2]))
-
-        phi = np.linspace(0, 2*np.pi, 24, endpoint=False)
-        dx = np.cos(phi) * EPS
-        dy = np.sin(phi) * EPS
-
-        # dx = np.array([[200.1, 0.0]])
-        # dy = np.array([[0.0, 0.0]])
-
-        for source in sources:
-
-            line_starts = np.dstack((dx+source[0], dy+source[1]))[0]
-            positives = np.repeat(source[2] > 0, line_starts.shape[0])
+            self.circ = pyglet.shapes.Circle(300, 200, 3, batch=self.batch)
 
             field_lines = field.trace_field_lines(
-                line_starts,
-                500,
-                positives,
+                starts=line_starts,
+                max_points=999999,
+                positives=positives,
                 clip_ranges=clip_ranges
             )
 
             self.__add_field_lines(field_lines)
+
+        else:
+
+            sources = [
+                (200, 200, 5),
+                (400, 200, -5),
+                (300, 200, 1),
+                (300, 300, -1),
+                (10, 0, 10)
+            ]
+
+            for i, s in enumerate(sources):
+
+                self.__dict__["source_"+str(i)] = pyglet.shapes.Circle(s[0], s[1], 3, batch=self.batch)
+
+                field.add_element(PointSource(np.array([s[0], s[1]]), s[2]))
+
+            phi = np.linspace(0, 2*np.pi, 24, endpoint=False)
+            dx = np.cos(phi) * EPS
+            dy = np.sin(phi) * EPS
+
+            # dx = np.array([5.0, 0.0])
+            # dy = np.array([0.0, 0.0])
+
+            for source in sources:
+
+                line_starts = np.dstack((dx+source[0], dy+source[1]))[0]
+                positives = np.repeat(source[2] > 0, line_starts.shape[0])
+
+                field_lines = field.trace_field_lines(
+                    line_starts,
+                    500,
+                    positives,
+                    clip_ranges=clip_ranges
+                )
+
+                self.__add_field_lines(field_lines)
 
     def __add_field_lines(self,
                           lines: np.ndarray) -> None:

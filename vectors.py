@@ -80,12 +80,16 @@ Parameters:
     start_dots = many_dot(vecs_se, vecs_sr)
 
     return np.where(
-        end_dots > 0,
-        dists_to_e,
+        np.all(np.isclose(seg_starts, seg_ends), axis=1),
+        dists_to_s,  # If start and end are same then just use distance to the point
         np.where(
-            start_dots < 0,
-            dists_to_s,
-            dists_to_line
+            end_dots > 0,
+            dists_to_e,
+            np.where(
+                start_dots < 0,
+                dists_to_s,
+                dists_to_line
+            )
         )
     )
 
@@ -124,17 +128,23 @@ Parameters:
 
     end_dots = many_dot(vecs_se, vecs_er)
     start_dots = many_dot(vecs_se, vecs_sr)
+    line_seg_is_point = np.all(np.isclose(seg_starts, seg_ends), axis=1)
 
     end_dots_mat = np.tile(end_dots, (seg_starts.shape[1], 1)).T
     start_dots_mat = np.tile(start_dots, (seg_starts.shape[1], 1)).T
+    line_seg_is_point_mat = np.tile(line_seg_is_point, (seg_starts.shape[1], 1)).T
 
     return np.where(
-        end_dots_mat >= 0,
-        seg_ends,  # The end of the line segment
+        line_seg_is_point_mat,
+        seg_starts,
         np.where(
-            start_dots_mat <= 0,
-            seg_starts,  # The start of the line segment
-            seg_starts + (on_line_dots[:, np.newaxis] * line_dirs)  # A position along the line segment
+            end_dots_mat >= 0,
+            seg_ends,  # The end of the line segment
+            np.where(
+                start_dots_mat <= 0,
+                seg_starts,  # The start of the line segment
+                seg_starts + (on_line_dots[:, np.newaxis] * line_dirs)  # A position along the line segment
+            )
         )
     )
 
@@ -150,6 +160,9 @@ Parameters:
 
     assert poss.ndim == 2, "Invalid input dimensionality"
 
+    if poss.shape[0] == 0:
+        return np.zeros_like(poss)
+
     grad = np.empty_like(poss)
 
     for i in range(grad.shape[1]):
@@ -162,7 +175,9 @@ Parameters:
         right_grads = (field_func(poss + eps_vec) - field_func(poss)) / EPS
         left_grads = (field_func(poss) - field_func(poss - eps_vec)) / EPS
 
-        avg_grads = np.average(np.array([right_grads, left_grads]), axis=0)
+        paired_grads = np.stack([right_grads, left_grads]).T
+
+        avg_grads = np.average(paired_grads, axis=1)
 
         grad[:, i] = np.where(
             np.isinf(field_func(poss)),
@@ -216,3 +231,19 @@ Returns:
     outside_bounds = np.logical_or(outside_of_lower, outside_of_upper)
 
     return outside_bounds
+
+def mat_mask(mask: np.ndarray, n: int) -> np.ndarray:
+    """Takes a boolean array representing a mask and returns the 2D array representing the mask working in 2 dimensions
+
+Parameters:
+
+    mask - the original mask to use
+
+    n - the number of values the output should have on its second axis (aka axis 1)
+
+Returns:
+
+    mask_mat - the matrix/2D version of the mask such that mask_mat[i,j] = mask[i] for all 0 <= j <= n
+"""
+
+    return np.tile(mask, (n, 1)).T

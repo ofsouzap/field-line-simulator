@@ -140,3 +140,54 @@ class TestLineSegDistanceToPoint(ArrayComparingTest):
         outs = line_seg_distance_to_point(starts, ends, rs)
 
         self.compare_arrs(outs, exps)
+
+    def test_on_points(self):
+
+            starts = np.tile(
+                np.array([-1, -3/2, 1]),
+                (2, 1)
+            )
+
+            ends = np.tile(
+                np.array([3/2, -2, -5]),
+                (2, 1)
+            )
+
+            rs = np.array([
+                [-1.0, -3/2, 1.0],
+                [3/2, -2.0, -5.0]
+            ])
+
+            self.compare_arrs(line_seg_distance_to_point(starts, ends, rs), np.zeros(shape=(starts.shape[0],)))
+
+    def test_1d_line_seg(self):
+
+        starts = np.tile(
+            np.array([-1, -3/2, 1]),
+            (5, 1)
+        )
+
+        ends = np.tile(
+            np.array([-1, -3/2, 1]),
+            (5, 1)
+        )
+
+        rs = np.array([
+            [-1.0, -3/2, 1.0],
+            [-4, 0, -75],
+            [0, 0, 0],
+            [-4, -0.4, 0],
+            [np.inf, 1.0, 3.2]
+        ])
+
+        exps = np.sqrt(np.array([
+            0.0,
+            5787.25,
+            4.25,
+            11.21,
+            np.inf
+        ]))
+
+        outs = line_seg_distance_to_point(starts, ends, rs)
+
+        self.compare_arrs(outs, exps)

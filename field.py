@@ -89,7 +89,7 @@ Returns:
             )
 
             replace_mask = np.logical_and(closer_mask, ele_type_mask)  # AND the masks together
-            replace_mask_mat = np.tile(replace_mask, (seg_starts.shape[1], 1)).T
+            replace_mask_mat = vectors.mat_mask(replace_mask, seg_starts.shape[1])
 
             out_sqr_distances = np.where(
                 replace_mask,
@@ -104,6 +104,35 @@ Returns:
             )
 
         return out_sqr_distances, out_positions
+
+    def __line_trace_next_positions(self,
+                                    poss: np.ndarray,
+                                    positives: np.ndarray,
+                                    step_distance: float) -> np.ndarray:
+        """Computes the next point to extend a field line being traced
+
+Parameters:
+
+    poss - a 2D array of the position vectors of the points that the line is currently at
+
+    positives - a 1D array of booleans describing which lines are positive lines
+
+    step_distance - how far the lines should step
+
+Returns:
+
+    nexts - a 2D array of the position vectors of the next points that the lines should go to
+"""
+
+        grads = self.grad(poss)  # R^(line_count)x(dim)
+
+        move_dir = grads / vectors.magnitudes(grads)[:, np.newaxis]  # R^(line_count)x(dim)
+
+        move_dir[positives] *= -1  # Invert the direction of the positive lines' move directions
+
+        nexts = poss + (move_dir * step_distance)  # R^(line_count)x(dim)
+
+        return nexts
 
     def trace_field_lines(self,
                           starts: np.ndarray,
@@ -143,6 +172,11 @@ When a field line is ended early, the final value before clipping is propagated 
             assert clip_ranges.ndim == 2, "Invalid clip_ranges dimensionality"
             assert np.all(clip_ranges[:, 0] <= clip_ranges[:, 1]), "clip_ranges lower bounds must not be greater than the upper bounds"
             assert clip_ranges.shape[0] == starts.shape[1], "clip_ranges doesn't have same number of vector components as start positions"
+        else:
+            clip_ranges = np.tile(
+                np.array([-np.inf, np.inf]),
+                (starts.shape[1], 1)
+            )
 
         line_count = starts.shape[0]  # Number of lines being traced
         dim = starts.shape[1]  # Dimensions of the space
@@ -159,61 +193,49 @@ When a field line is ended early, the final value before clipping is propagated 
 
         for t in range(0, max_points-1):
 
-            # Handle active lines
+            # Stop if no active lines
 
-            curr_poss = lines[:, t]  # R^(line_count)x(dim)
+            if ~np.any(active_mask):
+                break
 
-            # Calculate directions to move in
+            # Clip any lines outside of the allowed range and deactivate them
 
-            grads = self.grad(curr_poss)  # R^(line_count)x(dim)
+            clip_mask = vectors.outside_bounds(lines[active_mask, t, :], clip_ranges)
 
-            active_mask = np.logical_and(active_mask, np.logical_not(np.all(np.isclose(grads, 0.0), axis=1)))  # Make inactive lines found to be at stationary points
-
-            move_dir = grads / vectors.magnitudes(grads)[:, np.newaxis]  # R^(line_count)x(dim)
-
-            move_dir[positives] *= -1  # Invert the direction of the positive lines' move directions
-
-            # Find and store the next points or propagate old points
-
-            new_poss = curr_poss + (move_dir * step_distance)  # R^(line_count)x(dim)
-
-            active_mask_mat = np.tile(active_mask, (starts.shape[1], 1)).T
-
-            lines[:, t+1] = np.where(
-                active_mask_mat,
-                new_poss,
-                lines[:, t]
-            )
-
-            del active_mask_mat
-
-            # Check nearest appropriate field elements of active lines
+            # Deactivate lines that went too close to a field element
 
             nearest_sqr_distances, nearest_poss = self.line_seg_nearest_element(
-                lines[active_mask, t],  # The old positions
-                lines[active_mask, t+1],  # The new positions
+                lines[active_mask, max(t-1, 0)],  # The old positions
+                lines[active_mask, t],  # The new positions
                 positives[active_mask]  # Which lines are positive
             )
 
-            # Create a mask for lines that are newly-terminated
-            # N.B. point_close_mask is relative to active_mask
-
             point_close_mask = nearest_sqr_distances <= element_stop_distance  # Which of the active lines have been deactivated
 
-            # Replace the ending positions of the newly-terminated lines and set them as inactive
+            # Calculate next positions for active lines
 
-            lines[active_mask][point_close_mask, t+1] = nearest_poss[point_close_mask]
-            active_mask[active_mask][point_close_mask] = False
+            active_curr_poss = lines[active_mask, t]  # R^(line_count)x(dim)
+            active_positives = positives[active_mask]  # {0,1}^(line_count)
 
-            # Clip any lines outside of the allowed range
+            active_next_poss = self.__line_trace_next_positions(active_curr_poss, active_positives, step_distance=step_distance)
 
-            if clip_ranges is not None:
+            # lines[active_mask, t+1] = new_active_poss
 
-                # N.B. clip_mask is relative to active_mask
+            # Apply effects of computations to active lines, inactive lines and the active mask
 
-                clip_mask = vectors.outside_bounds(lines[active_mask, t+1, :], clip_ranges)
+            lines[active_mask, t+1, :] = np.where(
+                vectors.mat_mask(clip_mask, dim),
+                lines[active_mask, t, :],  # When line gets clipped this iteration
+                np.where(
+                    vectors.mat_mask(point_close_mask, dim),
+                    nearest_poss,  # When line reaches a field element this iteration
+                    active_next_poss  # Normal behaviour, just continuing the line
+                )
+            )
 
-                active_mask[active_mask][clip_mask] = False
+            lines[~active_mask, t+1, :] = lines[~active_mask, t, :]
+
+            active_mask[active_mask] = (~clip_mask) & (~point_close_mask)
 
         # Return the output
 
