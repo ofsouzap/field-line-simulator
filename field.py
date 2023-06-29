@@ -187,8 +187,6 @@ When a field line is ended early, the final value before clipping is propagated 
 
             del active_mask_mat
 
-            # lines[active_mask, t+1] = new_poss  # TODO - this doesn't work as I've changed active_mask since getting curr_poss using that mask
-
             # Check nearest appropriate field elements of active lines
 
             nearest_sqr_distances, nearest_poss = self.line_seg_nearest_element(

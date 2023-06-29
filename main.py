@@ -34,7 +34,7 @@ class MainWindow(pyglet.window.Window):
             (400, 200, -5),
             (300, 200, 1),
             (300, 300, -1),
-            (0, 0, 100)
+            (0, 0, 10)
         ]
 
         for i, s in enumerate(sources):

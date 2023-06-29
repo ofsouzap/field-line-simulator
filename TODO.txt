@@ -1,0 +1,8 @@
+- try find ways to speed up computation
+    - good place to start is calculating nearest field elements in field.py which, at the moment,
+        calculates for all the field lines even though many won't be needed
+- fix division by 0 errors
+- allow adding and removing field elements
+- allow moving existing field elements around the area
+- allow saving and loading fields (stored as collections of field elements)
+- eventually, make 3D
