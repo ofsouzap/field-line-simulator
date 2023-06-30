@@ -2,4 +2,5 @@
 - allow adding and removing field elements
 - allow moving existing field elements around the area
 - allow saving and loading fields (stored as collections of field elements)
+- try generating images with matplotlib then saving as image file and see how speed compares to pyglet
 - eventually, make 3D

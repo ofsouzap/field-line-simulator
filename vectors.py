@@ -1,8 +1,7 @@
 from typing import Callable
 import numpy as np
 import vectors
-
-EPS = 1e-6
+from settings import EPS
 
 def many_dot(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Takes two arrays of vectors and computes a result array comprising of the dot (aka scalar) products of the corresponding pairs of the vectors

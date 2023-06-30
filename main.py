@@ -4,7 +4,6 @@ import pyglet
 import numpy as np
 from field import Field
 from point_source import PointSource
-from vectors import EPS
 from _debug_util import Timer
 
 

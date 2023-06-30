@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 from element_base import ElementBase
 import numpy as np
 import vectors
-from vectors import EPS
+from settings import EPS
 
 class PointSource(ElementBase):
     """A 2D/3D point source of a field"""

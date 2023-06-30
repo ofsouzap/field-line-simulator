@@ -2,9 +2,7 @@ from typing import List, Tuple, Optional, Iterator
 from element_base import ElementBase
 import numpy as np
 import vectors
-
-FIELD_LINE_TRACE_DEFAULT_STEP = 5
-FIELD_LINE_TRACE_DEFAULT_ELEMENT_STOP_DISTANCE = 1
+import settings
 
 class ElementNotInFieldException(Exception): pass
 
@@ -190,8 +188,8 @@ Returns:
                           starts: np.ndarray,
                           max_points: int,
                           positives: np.ndarray,
-                          step_distance: float = FIELD_LINE_TRACE_DEFAULT_STEP,
-                          element_stop_distance: float = FIELD_LINE_TRACE_DEFAULT_ELEMENT_STOP_DISTANCE,
+                          step_distance: Optional[float] = None,
+                          element_stop_distance: Optional[float] = None,
                           clip_ranges: Optional[np.ndarray] = None) -> np.ndarray:
         """Traces field lines starting at some position vectors and following the field for a specified distance or until reaching an absorber/emitter field element
 
@@ -219,6 +217,12 @@ When a field line is ended early, the final value before clipping is propagated 
         assert starts.ndim == 2, "Invalid starting point array dimensionality"
         assert positives.ndim == 1, "Invalid positives array dimensionality"
         assert starts.shape[0] == positives.shape[0], "Starting point and positives arrays are not of matching shapes"
+
+        if step_distance is None:
+            step_distance = settings.field_line_trace_step_distance
+
+        if element_stop_distance is None:
+            element_stop_distance = settings.field_line_trace_element_stop_distance
 
         if clip_ranges is not None:
             assert clip_ranges.ndim == 2, "Invalid clip_ranges dimensionality"
