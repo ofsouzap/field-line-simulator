@@ -1,6 +1,3 @@
-- try find ways to speed up computation
-    - good place to start is calculating nearest field elements in field.py which, at the moment,
-        calculates for all the field lines even though many won't be needed
 - terminate line when it is in a field element regardless of its sign
 - vary number of field lines from a source by the strength of the source
 - fix division by 0 errors

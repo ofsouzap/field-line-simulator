@@ -5,6 +5,7 @@ import numpy as np
 from field import Field
 from point_source import PointSource
 from vectors import EPS
+from _debug_util import Timer
 
 
 WINDOW_TITLE = "Field Line Simulator"
@@ -71,11 +72,22 @@ class MainWindow(pyglet.window.Window):
             # dx = np.array([5.0, 0.0])
             # dy = np.array([0.0, 0.0])
 
-            for source in sources:
+            line_starts = np.tile(
+                np.dstack((dx, dy))[0],
+                (len(sources), 1)
+            )
 
-                line_starts = np.dstack((dx+source[0], dy+source[1]))[0]
-                positives = np.repeat(source[2] > 0, line_starts.shape[0])
+            positives = np.ones(shape=(len(sources)*dx.shape[0]), dtype=bool)
 
+            for i, source in enumerate(sources):
+
+                line_starts[24*i:24*(i+1), 0] += source[0]
+                line_starts[24*i:24*(i+1), 1] += source[1]
+
+                if source[2] < 0:
+                    positives[24*i:24*(i+1)] = False
+
+            with Timer("Trace Lines"):
                 field_lines = field.trace_field_lines(
                     line_starts,
                     500,
@@ -83,6 +95,7 @@ class MainWindow(pyglet.window.Window):
                     clip_ranges=clip_ranges
                 )
 
+            with Timer("Plot Lines"):
                 self.__add_field_lines(field_lines)
 
     def __add_field_lines(self,
