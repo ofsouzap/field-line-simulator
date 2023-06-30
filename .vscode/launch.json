@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Main (UNIX)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Profile Field Line Tracing",
             "type": "python",
             "request": "launch",
@@ -12,18 +20,24 @@
             "justMyCode": true
         },
         {
-            "name": "Python: Current File",
+            "name": "Plot Eval Field Growth",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
+            "module": "tests.profiling.plot_eval_field_growth",
             "justMyCode": true
         },
         {
-            "name": "Main (UNIX)",
+            "name": "Plot Line Trace Iteration Growth",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/main.py",
+            "module": "tests.profiling.plot_trace_field_line_step_growth",
+            "justMyCode": true
+        },
+        {
+            "name": "Run Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true
         }
