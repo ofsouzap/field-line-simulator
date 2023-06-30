@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Iterator
 from element_base import ElementBase
 import numpy as np
 import vectors
@@ -23,6 +23,10 @@ class Field:
             self.__elements.remove(ele)
         else:
             raise ElementNotInFieldException()
+
+    def iter_elements(self) -> Iterator[ElementBase]:
+        for ele in self.__elements:
+            yield ele
 
     def evaluate(self, poss: np.ndarray) -> np.ndarray:
 

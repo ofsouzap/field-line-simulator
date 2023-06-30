@@ -1,5 +1,3 @@
-- terminate line when it is in a field element regardless of its sign
-- vary number of field lines from a source by the strength of the source
 - fix division by 0 errors
 - allow adding and removing field elements
 - allow moving existing field elements around the area

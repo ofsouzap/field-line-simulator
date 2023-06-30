@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Tuple, Optional
 import numpy as np
 
 class ElementBase(ABC):
@@ -51,3 +52,21 @@ Returns:
     def find_line_seg_nearest_point(self, seg_starts: np.ndarray, seg_ends: np.ndarray) -> np.ndarray:
         """Find the nearest points of the element to the provided line segments"""
         pass
+
+    @abstractmethod
+    def get_field_line_starts(self, fac: int = 1, dim: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+        """Calculates and returns the positions at which field lines from this element should be started and which are positive-directed lines taking into account the element's strength
+
+Parameters:
+
+    fac (default 1) - how much to multiply the number of lines decided to create by
+
+    dim (optional) - the number of components each position should have. Usually will be 2 for a 2D space or 3 for a 3D space
+
+Returns:
+
+    line_starts - the positions to start the lines in
+
+    positives - which lines are positive lines
+
+"""
