@@ -1,5 +1,5 @@
 import pyglet
-from field import Field
+from field import Field, List
 from point_source import PointSource
 import numpy as np
 from _debug_util import Timer
@@ -10,7 +10,7 @@ WINDOW_DEFAULT_WIDTH = 720
 WINDOW_DEFAULT_HEIGHT = 480
 
 
-class MainWindow(pyglet.window.Window):
+class DiagramWindow(pyglet.window.Window):
 
     def __init__(self, width: int, height: int):
 
@@ -18,34 +18,29 @@ class MainWindow(pyglet.window.Window):
 
         self.batch = pyglet.graphics.Batch()
 
+        self.__lifetime = 0
         self.__field_line_lines = []
 
-        # TODO: Below is just for trying stuff out. Remove later
+    def draw_field(self,
+                   field: Field) -> None:
+        """Clears the current diagram and draws the field provided"""
 
-        field = Field()
+        # Clear current lines
+
+        self.__clear_field_lines()
+
+        # Generate field line generation data
 
         clip_ranges = np.array([
-            [0, width],
-            [0, height]
+            [0, self.width],
+            [0, self.height]
         ])
-
-        sources = [
-            (200, 200, 5),
-            (400, 200, -5),
-            (300, 200, 1),
-            (300, 300, -1),
-            (10, 0, 10)
-        ]
-
-        for i, s in enumerate(sources):
-
-            self.__dict__["source_"+str(i)] = pyglet.shapes.Circle(s[0], s[1], 3, batch=self.batch)
-
-            field.add_element(PointSource(np.array([s[0], s[1]]), s[2]))
 
         line_starts_list = []
         postives_list = []
+
         for ele in field.iter_elements():
+
             starts, pos = ele.get_field_line_starts(fac=16)
             line_starts_list.append(starts)
             postives_list.append(pos)
@@ -53,7 +48,9 @@ class MainWindow(pyglet.window.Window):
         line_starts = np.concatenate(line_starts_list)
         positives = np.concatenate(postives_list)
 
-        with Timer("Trace Lines"):
+        # Generate field line data
+
+        with Timer("Trace Lines"):  # TODO - remove timers when ready
             field_lines = field.trace_field_lines(
                 line_starts,
                 500,
@@ -61,7 +58,9 @@ class MainWindow(pyglet.window.Window):
                 clip_ranges=clip_ranges
             )
 
-        with Timer("Plot Lines"):
+        # Plot calculated lines
+
+        with Timer("Plot Lines"):  # TODO - remove timers when ready
             self.__add_field_lines(field_lines)
 
     def __add_field_lines(self,
@@ -113,13 +112,35 @@ class MainWindow(pyglet.window.Window):
 
     def update(self, delta_time: float) -> None:
 
-        pass
+        self.__lifetime += delta_time
 
 
 def open_gui():
     """Create and open the main GUI. Blocks until the window is closed"""
 
-    window = MainWindow(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT)  # Create main window
+    window = DiagramWindow(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT)  # Create main window
+
+    # TODO - below field-making is just an example, delete once proper gui with field editing is made
+
+    field = Field()
+
+    sources_dat = [
+        (200, 200, 5),
+        (400, 200, -5),
+        (300, 200, 1),
+        (300, 300, -1),
+        (10, 0, 10)
+    ]
+
+    source_shapes: List[pyglet.shapes.ShapeBase] = []
+
+    for i, s in enumerate(sources_dat):
+
+        source_shapes.append(pyglet.shapes.Circle(s[0], s[1], 3, batch=window.batch))
+
+        field.add_element(PointSource(np.array([s[0], s[1]]), s[2]))
+
+    window.draw_field(field)
 
     pyglet.clock.schedule_interval(window.update, 1/30)  # Register window's update function
 

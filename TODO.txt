@@ -1,6 +1,7 @@
 - fix division by 0 errors
 - allow adding and removing field elements
 - add arrowheads to field lines
+- check field lines are being generated uniformly around point source. on a single point source can see that it doesn't look correct
 - allow moving existing field elements around the area
 - allow saving and loading fields (stored as collections of field elements)
 - try generating images with matplotlib then saving as image file and see how speed compares to pyglet
