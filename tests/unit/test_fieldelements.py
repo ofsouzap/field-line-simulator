@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
-from element_base import ElementBase
-from point_source import PointSource
+from field_element import ElementBase, PointSource
 from _test_util import *
 
 class TestPointSource(ArrayComparingTest):

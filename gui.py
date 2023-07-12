@@ -2,7 +2,7 @@ import pyglet
 from typing import List, Tuple
 from os.path import join as joinpath
 from field import Field
-from point_source import PointSource
+from field_element import PointSource
 import numpy as np
 from _debug_util import Timer
 
