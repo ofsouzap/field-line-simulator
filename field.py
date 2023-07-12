@@ -1,5 +1,5 @@
 from typing import List, Tuple, Optional, Iterator
-from element_base import ElementBase
+from field_element import ElementBase
 import numpy as np
 import vectors
 import settings
