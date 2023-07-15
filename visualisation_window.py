@@ -10,7 +10,10 @@ WINDOW_DEFAULT_WIDTH = 720
 WINDOW_DEFAULT_HEIGHT = 480
 
 
-class DiagramWindow(pyglet.window.Window):
+class AppAlreadyRunningException(Exception): pass
+
+
+class Window(pyglet.window.Window):
 
     def __init__(self, width: int, height: int):
 
@@ -115,10 +118,45 @@ class DiagramWindow(pyglet.window.Window):
         self.__lifetime += delta_time
 
 
-def open_gui():
-    """Create and open the main GUI. Blocks until the window is closed"""
+class Controller:
+    """A wrapper for a visualisation window for controlling the window"""
 
-    window = DiagramWindow(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT)  # Create main window
+    app_running: bool = False
+
+    def __init__(self, window: Window):
+
+        self.__window = window
+
+    def set_field(self, field: Field) -> None:
+        self.__window.draw_field(field)
+
+    @staticmethod
+    def run_app() -> None:
+        """Starts the Pyglet event loop running.
+Only should be called when all windows have been created and can't be called again from any instance of the class or otherwise.
+Will block until all windows are closed.
+"""
+
+        if Controller.app_running:
+
+            raise AppAlreadyRunningException()
+
+        else:
+
+            pyglet.app.run()
+
+
+def create_window() -> Controller:
+    """Create and open the visualisation window.
+Note that this doesn't start the window running
+
+Returns:
+
+    controller - a controller object for the window
+"""
+
+    window = Window(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT)  # Create main window
+    controller = Controller(window)  # Create window's controller
 
     # TODO - below field-making is just an example, delete once proper gui with field editing is made
 
@@ -127,9 +165,9 @@ def open_gui():
     sources_dat = [
         (200, 200, 5),
         (400, 200, -5),
-        (300, 200, 1),
-        (300, 300, -1),
-        (10, 0, 10)
+        # (300, 200, 1),
+        # (300, 300, -1),
+        # (10, 0, 10)
     ]
 
     source_shapes: List[pyglet.shapes.ShapeBase] = []
@@ -142,10 +180,16 @@ def open_gui():
 
     window.draw_field(field)
 
-    pyglet.clock.schedule_interval(window.update, 1/30)  # Register window's update function
+    # Schedule window's update function
 
-    pyglet.app.run()  # Run app
+    pyglet.clock.schedule_interval(window.update, 1/30)
+
+    # Return the window controller
+
+    return controller
 
 
 if __name__ == "__main__":
-    open_gui()
+
+    controller = create_window()
+    controller.run_app()
