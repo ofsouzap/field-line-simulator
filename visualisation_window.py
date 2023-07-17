@@ -1,6 +1,7 @@
 import pyglet
 from abc import ABC, abstractmethod
 from typing import Optional, Callable, Set, Tuple
+import vectors
 from field import Field
 from field_element import ElementBase, PointSource
 import numpy as np
@@ -36,12 +37,18 @@ Returns:
 
     shapes - the shapes created and added to the batch. These should be stored so they aren't garbage collected
 """
-    pass
+        raise NotImplementedError()
+
+    @abstractmethod
+    def point_in_bounds(self, posx: int, posy: int) -> bool:
+        """Checks if the point specified lies in the region that the rendered element is in"""
+        raise NotImplementedError()
 
 
 class _PointSourceRender(_FieldElementRenderBase):
 
     RADIUS: int = 5
+    SQR_RADIUS: int = RADIUS * RADIUS
 
     def __init__(self, ps: PointSource):
         self.ps = ps
@@ -77,6 +84,25 @@ class _PointSourceRender(_FieldElementRenderBase):
 
         return {circle}
 
+    def point_in_bounds(self, posx: int, posy: int) -> bool:
+
+        pos_vec = np.array([posx, posy], dtype=float)
+
+        sqr_dist = vectors.sqr_magnitudes(pos_vec - self.ps.pos)[0]
+
+        return sqr_dist <= _PointSourceRender.SQR_RADIUS
+
+
+def _create_element_renderer(ele: ElementBase) -> _FieldElementRenderBase:
+
+    match ele:
+
+        case PointSource():
+            return _PointSourceRender(ele)
+
+        case _:
+            raise ValueError("Unhandled element class")
+
 
 class Window(pyglet.window.Window):
 
@@ -101,20 +127,12 @@ class Window(pyglet.window.Window):
 
         for ele in field.iter_elements():
 
-            shapes: Set
-
-            match ele:
-
-                case PointSource():
-                    shapes = _PointSourceRender(ele).draw(self.field_elements_batch)
-
-                case _:
-                    raise ValueError("Unhandled field element type")
+            shapes: Set = _create_element_renderer(ele).draw(self.field_elements_batch)
 
             self.__field_shapes |= shapes
 
     def draw_field_lines(self,
-                   field: Field) -> None:
+                         field: Field) -> None:
         """Draws the field lines of a field without drawing the field elements"""
 
         # Generate field line generation data
@@ -132,6 +150,9 @@ class Window(pyglet.window.Window):
             starts, pos = ele.get_field_line_starts(fac=16)
             line_starts_list.append(starts)
             postives_list.append(pos)
+
+        if len(line_starts_list) == 0:
+            return
 
         line_starts = np.concatenate(line_starts_list)
         positives = np.concatenate(postives_list)
@@ -228,16 +249,31 @@ class Controller:
 
     def recalculate(self) -> None:
 
+        self.redraw_only_elements()
+        self.__window.draw_field_lines(self.__field)
+
+    def redraw_only_elements(self) -> None:
+
         self.__window.clear_screen()
         self.__window.draw_field_elements(self.__field)
-        self.__window.draw_field_lines(self.__field)
 
     def add_field_element(self, ele: ElementBase) -> None:
 
         self.__field.add_element(ele)
 
-        self.__window.clear_screen()
-        self.__window.draw_field_elements(self.__field)
+        self.redraw_only_elements()
+
+    def try_delete_field_element_at(self, posx: int, posy: int) -> bool:
+        """Tries to remove an element at the position specified. Returns whether one was found"""
+
+        for ele in self.__field.iter_elements():
+
+            if _create_element_renderer(ele).point_in_bounds(posx, posy):
+                self.__field.remove_element(ele)
+                self.redraw_only_elements()
+                return True
+
+        return False
 
     @staticmethod
     def run_app() -> None:

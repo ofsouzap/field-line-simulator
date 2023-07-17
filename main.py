@@ -61,8 +61,11 @@ class ClickMode:
             controller.recalculate()
 
     def __delete_click(self, x: int, y: int, controller: VisualisationController) -> None:
-        print(f"Delete click at {x}, {y}")
-        pass  # TODO
+
+        ele_removed = controller.try_delete_field_element_at(x, y)
+
+        if ele_removed and settings.auto_recalcualate:
+            controller.recalculate()
 
 
 def main():
