@@ -1,6 +1,7 @@
 import pyglet
+from typing import Optional, Callable, Any
 from field import Field, List
-from field_element import PointSource
+from field_element import ElementBase, PointSource
 import numpy as np
 from _debug_util import Timer
 
@@ -15,22 +16,28 @@ class AppAlreadyRunningException(Exception): pass
 
 class Window(pyglet.window.Window):
 
-    def __init__(self, width: int, height: int):
+    def __init__(self,
+                 width: int,
+                 height: int,
+                 on_mouse_press: Callable[[int, int, int, int], None],):
 
         super().__init__(width, height, WINDOW_TITLE)
 
         self.batch = pyglet.graphics.Batch()
+        self.mouse_press_callback = on_mouse_press
 
         self.__lifetime = 0
         self.__field_line_lines = []
 
-    def draw_field(self,
+    def draw_field_elements(self,
+                            field: Field) -> None:
+        """Draws the field elements of a field without drawing the field lines"""
+
+        pass  # TODO
+
+    def draw_field_lines(self,
                    field: Field) -> None:
-        """Clears the current diagram and draws the field provided"""
-
-        # Clear current lines
-
-        self.__clear_field_lines()
+        """Draws the field lines of a field without drawing the field elements"""
 
         # Generate field line generation data
 
@@ -99,7 +106,7 @@ class Window(pyglet.window.Window):
 
             prev = curr
 
-    def __clear_field_lines(self) -> None:
+    def clear_screen(self) -> None:
 
         self.__field_line_lines.clear()
 
@@ -117,18 +124,38 @@ class Window(pyglet.window.Window):
 
         self.__lifetime += delta_time
 
+    def on_mouse_press(self, x, y, button, modifiers):
+        self.mouse_press_callback(x, y, button, modifiers)
+
 
 class Controller:
     """A wrapper for a visualisation window for controlling the window"""
 
     app_running: bool = False
 
-    def __init__(self, window: Window):
+    def __init__(self,
+                 window: Window,
+                 field: Optional[Field] = None):
 
         self.__window = window
 
-    def set_field(self, field: Field) -> None:
-        self.__window.draw_field(field)
+        if field is not None:
+            self.__field = field
+        else:
+            self.__field = Field()
+
+    def recalculate(self) -> None:
+
+        self.__window.clear_screen()
+        self.__window.draw_field_elements(self.__field)
+        self.__window.draw_field_lines(self.__field)
+
+    def add_field_element(self, ele: ElementBase) -> None:
+
+        self.__field.add_element(ele)
+
+        self.__window.clear_screen()
+        self.__window.draw_field_elements(self.__field)
 
     @staticmethod
     def run_app() -> None:
@@ -146,39 +173,24 @@ Will block until all windows are closed.
             pyglet.app.run()
 
 
-def create_window() -> Controller:
+def create_window(
+        on_mouse_press: Callable[[int, int, int, int], None]
+    ) -> Controller:
     """Create and open the visualisation window.
 Note that this doesn't start the window running
+
+Parameters:
+
+    on_mouse_press - a callable run when the window is clicked on with the mouse. \
+The inputs to the callable are the same as those for pyglet.Window.on_mouse_press (x, y, button, modifiers)
 
 Returns:
 
     controller - a controller object for the window
 """
 
-    window = Window(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT)  # Create main window
+    window = Window(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT, on_mouse_press)  # Create main window
     controller = Controller(window)  # Create window's controller
-
-    # TODO - below field-making is just an example, delete once proper gui with field editing is made
-
-    field = Field()
-
-    sources_dat = [
-        (200, 200, 5),
-        (400, 200, -5),
-        # (300, 200, 1),
-        # (300, 300, -1),
-        # (10, 0, 10)
-    ]
-
-    source_shapes: List[pyglet.shapes.ShapeBase] = []
-
-    for i, s in enumerate(sources_dat):
-
-        source_shapes.append(pyglet.shapes.Circle(s[0], s[1], 3, batch=window.batch))
-
-        field.add_element(PointSource(np.array([s[0], s[1]]), s[2]))
-
-    window.draw_field(field)
 
     # Schedule window's update function
 
@@ -191,5 +203,5 @@ Returns:
 
 if __name__ == "__main__":
 
-    controller = create_window()
+    controller = create_window(lambda x, y, btn, mods: print(f"Click at {x}, {y} with button {btn}"))
     controller.run_app()

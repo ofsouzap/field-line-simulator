@@ -40,6 +40,7 @@ class ControlsWindow(tk.Tk):
     def __init__(self,
                  save_callback: Callable[[], None],
                  load_callback: Callable[[], None],
+                 set_add_config_callback: Callable[["AddElementWindow.Config"], None],
                  delete_callback: Callable[[], None],
                  settings_callback: Callable[[], None],
                  help_callback: Callable[[], None],
@@ -52,6 +53,7 @@ class ControlsWindow(tk.Tk):
         self.title(ControlsWindow.WINDOW_TITLE)
 
         self.__add_element_window: Optional[AddElementWindow] = None
+        self.__set_add_config_callback = set_add_config_callback
 
         self.button_frame = tk.Frame(self)
 
@@ -95,10 +97,17 @@ class ControlsWindow(tk.Tk):
     def __open_add_elements_window(self) -> None:
 
         if self.__add_element_window is None:
-            self.__add_element_window = AddElementWindow(self)
+            self.__add_element_window = AddElementWindow(
+                self,
+                select_callback=self.__set_add_config_callback,
+                destroy_callback=self.__clear_add_element_window
+            )
         else:
             self.__add_element_window.lift()
             self.__add_element_window.focus_set()
+
+    def __clear_add_element_window(self) -> None:
+        self.__add_element_window = None
 
     def __place_button(self,
                        button: tk.Widget,
@@ -151,17 +160,25 @@ class AddElementWindow(tk.Toplevel):
     class Config:
         def __init__(
             self,
-            strength: float = 0
+            strength: float,
+            element_gen: Callable[[np.ndarray, float], ElementBase]
         ):
             self.strength = strength
+            self.create_element = lambda pos: element_gen(pos, self.strength)
 
-    def __init__(self, master):
+    def __init__(self,
+                 master,
+                 select_callback: Callable[[Config], None],
+                 destroy_callback: Callable[[], None]):
 
         super().__init__(master, takefocus=True)
 
         # Setup
 
         self.title(AddElementWindow.WINDOW_TITLE)
+
+        self.select_callback = select_callback
+        self.destroy_callback = destroy_callback
 
         self.__elements_items: List[tk.Widget] = []
 
@@ -192,14 +209,25 @@ class AddElementWindow(tk.Toplevel):
                                   elements: List[__Element]) -> None:
 
         for ele in elements:
-            _e = ele
+
+            _e = ele  # Storing here allows the lambdas to keep their values through the iterations
+
             item = self.__create_element_item(
                 self.elements_frame,
                 ele,
-                lambda: print(f"{_e.get_display_name()} selected")  # TODO
+                lambda: self.__select_element(_e)
             )
             self.__elements_items.append(item)
             item.pack(side=tk.TOP)
+
+    def __select_element(self, ele: __Element) -> None:
+
+        config = self.__create_config(ele.create_instance)
+
+        self.select_callback(config)
+
+        self.destroy_callback()
+        self.destroy()
 
     def __create_element_item(self,
                               master,
@@ -249,12 +277,13 @@ class AddElementWindow(tk.Toplevel):
 
         strength_frame.pack(side=tk.TOP)
 
-    def get_current_config(self) -> Config:
+    def __create_config(self, gen_ele: Callable[[np.ndarray, float], ElementBase]) -> Config:
 
         strength = self.strength_config_val
 
         config = AddElementWindow.Config(
-            strength=strength
+            strength,
+            gen_ele
         )
 
         return config
