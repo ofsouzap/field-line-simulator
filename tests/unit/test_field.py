@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from field import Field
-from point_source import PointSource
+from field_element import PointSource
 from _test_util import *
 
 class TestField(ArrayComparingTest):
