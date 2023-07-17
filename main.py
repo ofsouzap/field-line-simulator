@@ -14,7 +14,6 @@ def main():
     controls_window = ControlsWindow(
         save_callback=lambda: print("Save pressed"),
         load_callback=lambda: print("Load pressed"),
-        add_callback=lambda: print("Add pressed"),
         delete_callback=lambda: print("Delete pressed"),
         settings_callback=lambda: print("Settings pressed"),
         help_callback=lambda: print("Help pressed"),

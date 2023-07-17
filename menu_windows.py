@@ -1,4 +1,4 @@
-from typing import Callable, List, Dict
+from typing import Callable, List, Dict, Optional
 from abc import ABC, abstractmethod
 import tkinter as tk
 from tkinter import ttk
@@ -40,7 +40,6 @@ class ControlsWindow(tk.Tk):
     def __init__(self,
                  save_callback: Callable[[], None],
                  load_callback: Callable[[], None],
-                 add_callback: Callable[[], None],
                  delete_callback: Callable[[], None],
                  settings_callback: Callable[[], None],
                  help_callback: Callable[[], None],
@@ -52,6 +51,8 @@ class ControlsWindow(tk.Tk):
 
         self.title(ControlsWindow.WINDOW_TITLE)
 
+        self.__add_element_window: Optional[AddElementWindow] = None
+
         self.button_frame = tk.Frame(self)
 
         # Create buttons
@@ -62,7 +63,7 @@ class ControlsWindow(tk.Tk):
         self.__place_button(self.__create_button("Open (Ctrl+O)", load_callback, _load_res_image(ControlsWindow.LOAD_BTN_IMG)),
                             0, 1
         )
-        self.__place_button(self.__create_button("Add (A)", add_callback, _load_res_image(ControlsWindow.ADD_BTN_IMG)),
+        self.__place_button(self.__create_button("Add (A)", self.__open_add_elements_window, _load_res_image(ControlsWindow.ADD_BTN_IMG)),
                             1, 0
         )
         self.__place_button(self.__create_button("Delete (X)", delete_callback, _load_res_image(ControlsWindow.DELETE_BTN_IMG)),
@@ -91,6 +92,14 @@ class ControlsWindow(tk.Tk):
 
         return button
 
+    def __open_add_elements_window(self) -> None:
+
+        if self.__add_element_window is None:
+            self.__add_element_window = AddElementWindow(self)
+        else:
+            self.__add_element_window.lift()
+            self.__add_element_window.focus_set()
+
     def __place_button(self,
                        button: tk.Widget,
                        column: int,
@@ -104,7 +113,7 @@ class ControlsWindow(tk.Tk):
         )
 
 
-class AddElementWindow(tk.Tk):
+class AddElementWindow(tk.Toplevel):
 
     WINDOW_TITLE = "Fields - Add Element"
 
@@ -146,9 +155,9 @@ class AddElementWindow(tk.Tk):
         ):
             self.strength = strength
 
-    def __init__(self):
+    def __init__(self, master):
 
-        super().__init__()
+        super().__init__(master, takefocus=True)
 
         # Setup
 
