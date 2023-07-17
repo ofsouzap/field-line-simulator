@@ -1,6 +1,7 @@
 import pyglet
-from typing import Optional, Callable, Any
-from field import Field, List
+from abc import ABC, abstractmethod
+from typing import Optional, Callable, Set, Tuple
+from field import Field
 from field_element import ElementBase, PointSource
 import numpy as np
 from _debug_util import Timer
@@ -11,7 +12,70 @@ WINDOW_DEFAULT_WIDTH = 720
 WINDOW_DEFAULT_HEIGHT = 480
 
 
+WHITE = (255, 255, 255, 255)
+BLACK = (0, 0, 0, 255)
+RED = (255, 0, 0, 255)
+GREEN = (0, 255, 0, 255)
+BLUE = (0, 0, 255, 255)
+
+
 class AppAlreadyRunningException(Exception): pass
+
+
+class _FieldElementRenderBase(ABC):
+
+    @abstractmethod
+    def draw(self, batch: pyglet.graphics.Batch) -> Set:
+        """Creates the shapes required for rendering the element, adds them to the batch and then returns a set of the shapes created.
+
+Parameters:
+
+    batch - the batch to add the shapes to
+
+Returns:
+
+    shapes - the shapes created and added to the batch. These should be stored so they aren't garbage collected
+"""
+    pass
+
+
+class _PointSourceRender(_FieldElementRenderBase):
+
+    RADIUS: int = 5
+
+    def __init__(self, ps: PointSource):
+        self.ps = ps
+
+    def get_color(self) -> Tuple[int, int, int, int]:
+
+        if self.ps.strength == 0:
+            return WHITE
+        elif self.ps.strength > 0:
+            return (
+                255,
+                128*(1-round(np.tanh(self.ps.strength/50))),
+                128*(1-round(np.tanh(self.ps.strength/50))),
+                255
+            )
+        else:
+            return (
+                128*(1-round(np.tanh(-self.ps.strength/50))),
+                128*(1-round(np.tanh(-self.ps.strength/50))),
+                255,
+                255
+            )
+
+    def draw(self, batch: pyglet.graphics.Batch) -> Set:
+
+        circle = pyglet.shapes.Circle(
+            x=round(self.ps.x),
+            y=round(self.ps.y),
+            radius=_PointSourceRender.RADIUS,
+            color=self.get_color(),
+            batch=batch
+        )
+
+        return {circle}
 
 
 class Window(pyglet.window.Window):
@@ -23,17 +87,31 @@ class Window(pyglet.window.Window):
 
         super().__init__(width, height, WINDOW_TITLE)
 
-        self.batch = pyglet.graphics.Batch()
-        self.mouse_press_callback = on_mouse_press
-
         self.__lifetime = 0
-        self.__field_line_lines = []
+
+        self.field_lines_batch = pyglet.graphics.Batch()
+        self.field_elements_batch = pyglet.graphics.Batch()
+        self.__field_shapes: Set = set()
+
+        self.mouse_press_callback = on_mouse_press
 
     def draw_field_elements(self,
                             field: Field) -> None:
         """Draws the field elements of a field without drawing the field lines"""
 
-        pass  # TODO
+        for ele in field.iter_elements():
+
+            shapes: Set
+
+            match ele:
+
+                case PointSource():
+                    shapes = _PointSourceRender(ele).draw(self.field_elements_batch)
+
+                case _:
+                    raise ValueError("Unhandled field element type")
+
+            self.__field_shapes |= shapes
 
     def draw_field_lines(self,
                    field: Field) -> None:
@@ -99,16 +177,16 @@ class Window(pyglet.window.Window):
             line = pyglet.shapes.Line(
                 prev[0], prev[1],
                 curr[0], curr[1],
-                batch=self.batch
+                batch=self.field_lines_batch
             )
 
-            self.__field_line_lines.append(line)
+            self.__field_shapes.add(line)
 
             prev = curr
 
     def clear_screen(self) -> None:
 
-        self.__field_line_lines.clear()
+        self.__field_shapes.clear()
 
     def round_float_pos(self, pos: np.ndarray) -> np.ndarray:
 
@@ -118,7 +196,11 @@ class Window(pyglet.window.Window):
         """Clear screen and draw batch of shapes"""
 
         self.clear()
-        self.batch.draw()
+
+        # Draw field lines and then field elements so that field elements are still visible
+
+        self.field_lines_batch.draw()
+        self.field_elements_batch.draw()
 
     def update(self, delta_time: float) -> None:
 
