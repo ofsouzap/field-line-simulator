@@ -183,6 +183,7 @@ class AddElementWindow(tk.Toplevel):
         self.__elements_items: List[tk.Widget] = []
 
         self.__strength_var_raw = tk.DoubleVar(self)
+        self.__strength_var_raw.set(1)  # Default to 1
 
         # Create frames
 
