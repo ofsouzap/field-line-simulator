@@ -3,6 +3,7 @@ import numpy as np
 import vectors
 from settings import EPS
 
+
 def many_dot(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Takes two arrays of vectors and computes a result array comprising of the dot (aka scalar) products of the corresponding pairs of the vectors
 
@@ -23,6 +24,7 @@ Returns:
 
     return np.diagonal(a @ b.T)
 
+
 def line_sqr_distance_to_point(line_as: np.ndarray, line_bs: np.ndarray, rs: np.ndarray) -> np.ndarray:
     """Calculates the minimum distance between multiple points and corresponding infinite lines"""
 
@@ -41,8 +43,10 @@ def line_sqr_distance_to_point(line_as: np.ndarray, line_bs: np.ndarray, rs: np.
 
     return dists
 
+
 def line_distance_to_point(line_as: np.ndarray, line_bs: np.ndarray, rs: np.ndarray) -> np.ndarray:
     return np.sqrt(line_sqr_distance_to_point(line_as, line_bs, rs))
+
 
 def line_seg_sqr_distance_to_point(seg_starts: np.ndarray, seg_ends: np.ndarray, rs: np.ndarray) -> np.ndarray:
     """Calculates the minimum square distance between multiple points and corresponding line segments.
@@ -92,8 +96,10 @@ Parameters:
         )
     )
 
+
 def line_seg_distance_to_point(seg_starts: np.ndarray, seg_ends: np.ndarray, rs: np.ndarray) -> np.ndarray:
     return np.sqrt(line_seg_sqr_distance_to_point(seg_starts, seg_ends, rs))
+
 
 def line_seg_closest_point(seg_starts: np.ndarray, seg_ends: np.ndarray, rs: np.ndarray) -> np.ndarray:
     """Calculates the closest points on line segments to points.
@@ -147,6 +153,26 @@ Parameters:
         )
     )
 
+
+def plane_distance_to_point(plane_poss: np.ndarray, plane_norms: np.ndarray, rs: np.ndarray) -> np.ndarray:
+    """Calculates the minimum distances between points and corresponding infinite planes. Assumes that the plane normals are unit vectors"""
+
+    assert plane_poss.ndim == plane_norms.ndim == rs.ndim == 2
+    assert plane_poss.shape[0] == plane_norms.shape[0] == rs.shape[0]
+    assert plane_poss.shape[1] == plane_norms.shape[1] == rs.shape[1]
+
+    plane_origin_displacements = plane_poss - rs
+
+    min_displacements = many_dot(
+        plane_origin_displacements,
+        plane_norms
+    )
+
+    distances = np.abs(min_displacements)
+
+    return distances
+
+
 def grad(field_func: Callable[[np.ndarray], np.ndarray], poss: np.ndarray) -> np.ndarray:
     """Approximates the gradient vector of a scalar field at some positions. At singularities, a grad value of 0 is used
 
@@ -186,6 +212,7 @@ Parameters:
 
     return grad
 
+
 def sqr_magnitudes(vecs: np.ndarray) -> np.ndarray:
     """Takes a 2D array of vectors or a single vector and returns a 1D array of the squares of the vectors' magnitudes"""
 
@@ -201,10 +228,20 @@ def sqr_magnitudes(vecs: np.ndarray) -> np.ndarray:
 
     return outs
 
+
 def magnitudes(vecs: np.ndarray) -> np.ndarray:
     """Takes a 2D array of vectors or a single vector and returns a 1D array of the vectors' magnitudes"""
 
     return np.sqrt(sqr_magnitudes(vecs))
+
+
+def many_normalise(vecs: np.ndarray) -> np.ndarray:
+    """Takes a 2D array of vectors and returns a 2D array of the unit vectors in the same directions as the inputs"""
+
+    assert vecs.ndim == 2
+
+    return vecs / np.tile(magnitudes(vecs), (vecs.shape[1],1)).T
+
 
 def outside_bounds(vecs: np.ndarray, bounds: np.ndarray) -> np.ndarray:
     """Finds which vectors are outside of the provided bounds
@@ -230,6 +267,7 @@ Returns:
     outside_bounds = np.logical_or(outside_of_lower, outside_of_upper)
 
     return outside_bounds
+
 
 def mat_mask(mask: np.ndarray, n: int) -> np.ndarray:
     """Takes a boolean array representing a mask and returns the 2D array representing the mask working in 2 dimensions
