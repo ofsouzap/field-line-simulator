@@ -111,7 +111,7 @@ class PointSource(ElementBase):
         return np.tile(self.pos, (seg_starts.shape[0], 1))
 
     def __field_line_count_2d(self) -> int:
-        return int(abs(np.ceil(self.strength)))
+        return int(abs(np.ceil(np.sqrt(np.abs(self.strength)))))
 
     def __field_line_count_3d(self) -> int:
         raise NotImplementedError()  # TODO
