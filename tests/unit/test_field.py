@@ -1,175 +1,177 @@
-import unittest
 import numpy as np
 from field import Field
 from field_element import PointSource
 from _test_util import *
 
-class TestField(ArrayComparingTest):
 
-    def test_single_point_positive(self):
+def test_single_point_positive():
 
-        field = Field()
+    field = Field()
 
-        field.add_element(PointSource(np.array([3, 4]), 25))
+    field.add_element(PointSource(np.array([3, 4]), 25))
 
-        inps = np.array([
-            [0, 0],
-            [6, 8],
-            [1, 2],
-            [np.inf, np.inf],
-            [np.inf, -np.inf],
-            [-np.inf, np.inf],
-            [-np.inf, -np.inf]
-        ])
+    inps = np.array([
+        [0, 0],
+        [6, 8],
+        [1, 2],
+        [np.inf, np.inf],
+        [np.inf, -np.inf],
+        [-np.inf, np.inf],
+        [-np.inf, -np.inf]
+    ])
 
-        exps = np.array([
-            1.0,
-            1.0,
-            3.125,
-            0.0,
-            0.0,
-            0.0,
-            0.0
-        ])
+    exps = np.array([
+        1.0,
+        1.0,
+        3.125,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ])
 
-        outs = field.evaluate(inps)
+    outs = field.evaluate(inps)
 
-        self.compare_arrs(outs, exps)
+    compare_arrs(outs, exps)
 
-    def test_single_point_negative(self):
 
-        field = Field()
+def test_single_point_negative():
 
-        field.add_element(PointSource(np.array([3, 4]), -25))
+    field = Field()
 
-        inps = np.array([
-            [0, 0],
-            [6, 8],
-            [1, 2],
-            [np.inf, np.inf],
-            [np.inf, -np.inf],
-            [-np.inf, np.inf],
-            [-np.inf, -np.inf]
-        ])
+    field.add_element(PointSource(np.array([3, 4]), -25))
 
-        exps = np.array([
-            -1.0,
-            -1.0,
-            -3.125,
-            0.0,
-            0.0,
-            0.0,
-            0.0
-        ])
+    inps = np.array([
+        [0, 0],
+        [6, 8],
+        [1, 2],
+        [np.inf, np.inf],
+        [np.inf, -np.inf],
+        [-np.inf, np.inf],
+        [-np.inf, -np.inf]
+    ])
 
-        outs = field.evaluate(inps)
+    exps = np.array([
+        -1.0,
+        -1.0,
+        -3.125,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ])
 
-        self.compare_arrs(outs, exps)
+    outs = field.evaluate(inps)
 
-    def test_dipole_equal_points(self):
+    compare_arrs(outs, exps)
 
-        field = Field()
 
-        field.add_element(PointSource(np.array([-1, 0]), 5))
-        field.add_element(PointSource(np.array([1, 0]), -5))
+def test_dipole_equal_points():
 
-        inps = np.array([
-            [0, 0],
-            [0, 1],
-            [2.2, 1.5],
-            [-1, -2],
-            [1, -2],
-            [np.inf, np.inf],
-            [np.inf, -np.inf],
-            [-np.inf, np.inf],
-            [-np.inf, -np.inf]
-        ])
+    field = Field()
 
-        exps = np.array([
-            0.0,
-            0.0,
-            -0.9546932939,
-            0.625,
-            -0.625,
-            0.0,
-            0.0,
-            0.0,
-            0.0
-        ])
+    field.add_element(PointSource(np.array([-1, 0]), 5))
+    field.add_element(PointSource(np.array([1, 0]), -5))
 
-        outs = field.evaluate(inps)
+    inps = np.array([
+        [0, 0],
+        [0, 1],
+        [2.2, 1.5],
+        [-1, -2],
+        [1, -2],
+        [np.inf, np.inf],
+        [np.inf, -np.inf],
+        [-np.inf, np.inf],
+        [-np.inf, -np.inf]
+    ])
 
-        self.compare_arrs(outs, exps)
+    exps = np.array([
+        0.0,
+        0.0,
+        -0.9546932939,
+        0.625,
+        -0.625,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ])
 
-    def test_dipole_unequal_points(self):
+    outs = field.evaluate(inps)
 
-        field = Field()
+    compare_arrs(outs, exps)
 
-        field.add_element(PointSource(np.array([-1, 0]), 5))
-        field.add_element(PointSource(np.array([1, 0]), -1))
 
-        inps = np.array([
-            [0, 0],
-            [0, 1],
-            [2.2, 1.5],
-            [-1, -2],
-            [1, -2],
-            [np.inf, np.inf],
-            [np.inf, -np.inf],
-            [-np.inf, np.inf],
-            [-np.inf, -np.inf]
-        ])
+def test_dipole_unequal_points():
 
-        exps = np.array([
-            4.0,
-            2.0,
-            0.1293175462,
-            1.125,
-            0.375,
-            0.0,
-            0.0,
-            0.0,
-            0.0
-        ])
+    field = Field()
 
-        outs = field.evaluate(inps)
+    field.add_element(PointSource(np.array([-1, 0]), 5))
+    field.add_element(PointSource(np.array([1, 0]), -1))
 
-        self.compare_arrs(outs, exps)
+    inps = np.array([
+        [0, 0],
+        [0, 1],
+        [2.2, 1.5],
+        [-1, -2],
+        [1, -2],
+        [np.inf, np.inf],
+        [np.inf, -np.inf],
+        [-np.inf, np.inf],
+        [-np.inf, -np.inf]
+    ])
 
-    def test_tripole_0(self):
+    exps = np.array([
+        4.0,
+        2.0,
+        0.1293175462,
+        1.125,
+        0.375,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ])
 
-        field = Field()
+    outs = field.evaluate(inps)
 
-        field.add_element(PointSource(np.array([-1, 0]), 5))
-        field.add_element(PointSource(np.array([1, 0]), -1))
-        field.add_element(PointSource(np.array([1, -5]), 0.3))
+    compare_arrs(outs, exps)
 
-        inps = np.array([
-            [0, 0],
-            [0, 1],
-            [2.2, 1.5],
-            [-1, -2],
-            [1, -2],
-            [1, -6],
-            [np.inf, np.inf],
-            [np.inf, -np.inf],
-            [-np.inf, np.inf],
-            [-np.inf, -np.inf]
-        ])
 
-        exps = np.array([
-            4.011538462,
-            2.008108108,
-            0.136184106,
-            1.148076923,
-            0.4083333333333,
-            0.3972222222222,
-            0.0,
-            0.0,
-            0.0,
-            0.0
-        ])
+def test_tripole_0():
 
-        outs = field.evaluate(inps)
+    field = Field()
 
-        self.compare_arrs(outs, exps)
+    field.add_element(PointSource(np.array([-1, 0]), 5))
+    field.add_element(PointSource(np.array([1, 0]), -1))
+    field.add_element(PointSource(np.array([1, -5]), 0.3))
+
+    inps = np.array([
+        [0, 0],
+        [0, 1],
+        [2.2, 1.5],
+        [-1, -2],
+        [1, -2],
+        [1, -6],
+        [np.inf, np.inf],
+        [np.inf, -np.inf],
+        [-np.inf, np.inf],
+        [-np.inf, -np.inf]
+    ])
+
+    exps = np.array([
+        4.011538462,
+        2.008108108,
+        0.136184106,
+        1.148076923,
+        0.4083333333333,
+        0.3972222222222,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ])
+
+    outs = field.evaluate(inps)
+
+    compare_arrs(outs, exps)

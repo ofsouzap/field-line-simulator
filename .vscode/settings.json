@@ -1,12 +1,8 @@
 {
     "python.analysis.typeCheckingMode": "basic",
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "./tests/unit",
-        "-p",
-        "test_*.py"
+    "python.testing.pytestArgs": [
+        "tests/unit"
     ],
-    "python.testing.pytestEnabled": false,
-    "python.testing.unittestEnabled": true
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
