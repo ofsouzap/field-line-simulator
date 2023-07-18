@@ -125,16 +125,12 @@ class PointSource(ElementBase):
 
     def get_field_at(self, poss: np.ndarray) -> np.ndarray:
 
-        assert poss.ndim in [2, 3], "Invalid input dimensionality"
-
-        # Using an inverse square law: field_at_point = strength / distance^2
-
         dists = vectors.magnitudes(poss - self.pos)
 
         values = np.where(
             np.isclose(dists, 0),
             np.repeat(np.inf, dists.shape[0]),
-            np.divide(self.strength, dists*dists)
+            np.divide(self.strength, dists)
         )
 
         return values
@@ -143,18 +139,14 @@ class PointSource(ElementBase):
 
         displacements = poss - self.pos
 
-        dists = vectors.magnitudes(displacements)
+        sqr_dists = vectors.sqr_magnitudes(displacements)
 
-        dists_invcube_mat = np.tile(
-            np.power(dists, np.repeat(-3, poss.shape[0])),
+        sqr_dists_mat = np.tile(
+            sqr_dists,
             (poss.shape[1],1),
         ).T
 
-        unit_grads = np.where(
-            vectors.mat_mask(np.isclose(dists, 0), poss.shape[1]),
-            np.zeros_like(poss),
-            -4 * displacements * dists_invcube_mat
-        )
+        unit_grads = -2 * displacements / sqr_dists_mat
 
         grads = self.strength * unit_grads
 
