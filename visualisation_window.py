@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Callable, Set, Tuple
 import vectors
 from field import Field
-from field_element import ElementBase, PointSource
+from field_element import ElementBase, PointSource, ChargePlane
 import numpy as np
 from _debug_util import Timer
 
@@ -26,10 +26,12 @@ class AppAlreadyRunningException(Exception): pass
 class _FieldElementRenderBase(ABC):
 
     @abstractmethod
-    def draw(self, batch: pyglet.graphics.Batch) -> Set:
+    def draw(self, draw_bounds: np.ndarray, batch: pyglet.graphics.Batch) -> Set:
         """Creates the shapes required for rendering the element, adds them to the batch and then returns a set of the shapes created.
 
 Parameters:
+
+    draw_bounds - the boundaries of the drawing area. Useful for drawing infinite elements
 
     batch - the batch to add the shapes to
 
@@ -72,7 +74,7 @@ class _PointSourceRender(_FieldElementRenderBase):
                 255
             )
 
-    def draw(self, batch: pyglet.graphics.Batch) -> Set:
+    def draw(self, draw_bounds: np.ndarray, batch: pyglet.graphics.Batch) -> Set:
 
         circle = pyglet.shapes.Circle(
             x=round(self.ps.x),
@@ -93,12 +95,107 @@ class _PointSourceRender(_FieldElementRenderBase):
         return sqr_dist <= _PointSourceRender.SQR_RADIUS
 
 
+class _ChargePlaneRender(_FieldElementRenderBase):
+
+    WIDTH: int = 5
+    SQR_WIDTH: int = WIDTH * WIDTH
+
+    def __init__(self, cp: ChargePlane):
+        self.cp = cp
+
+    def get_color(self) -> Tuple[int, int, int, int]:
+
+        if self.cp.strength == 0:
+            return WHITE
+        elif self.cp.strength > 0:
+            return (
+                255,
+                128*(1-round(np.tanh(self.cp.strength/50))),
+                128*(1-round(np.tanh(self.cp.strength/50))),
+                255
+            )
+        else:
+            return (
+                128*(1-round(np.tanh(-self.cp.strength/50))),
+                128*(1-round(np.tanh(-self.cp.strength/50))),
+                255,
+                255
+            )
+
+    def draw(self, draw_bounds: np.ndarray, batch: pyglet.graphics.Batch) -> Set:
+
+        xstart: float
+        xend: float
+        ystart: float
+        yend: float
+
+        if np.isclose(self.cp.normal[0], 0):
+
+            # Plane is horizontal
+
+            xstart = draw_bounds[0][0]
+            xend = draw_bounds[0][1]
+
+            ystart = self.cp.pos[1]
+            yend = self.cp.pos[1]
+
+        elif np.isclose(self.cp.normal[1], 0):
+
+            # Plane is vertical
+
+            xstart = self.cp.pos[0]
+            xend = self.cp.pos[0]
+
+            ystart = draw_bounds[1][0]
+            yend = draw_bounds[1][1]
+
+        else:
+
+            plane_grad = -self.cp.normal[0] / self.cp.normal[1]
+
+            xstart = draw_bounds[0][0]
+            xend = draw_bounds[0][1]
+
+            ystart = self.cp.pos[1] + ((xstart - self.cp.pos[0]) * plane_grad)
+            yend = self.cp.pos[1] + ((xend - self.cp.pos[0]) * plane_grad)
+
+        line = pyglet.shapes.Line(
+            x=xstart,
+            y=ystart,
+            x2=xend,
+            y2=yend,
+            width=_ChargePlaneRender.WIDTH,
+            color=self.get_color(),
+            batch=batch
+        )
+
+        return {line}
+
+    def point_in_bounds(self, posx: int, posy: int) -> bool:
+
+        pos_arr = np.array([posx, posy])
+
+        closest_plane_pos = vectors.plane_closest_point_to_line_seg(
+            self.cp.pos[np.newaxis, :],
+            self.cp.normal[np.newaxis, :],
+            pos_arr[np.newaxis, :],
+            pos_arr[np.newaxis, :]
+        )
+
+        sqr_dist = vectors.sqr_magnitudes(closest_plane_pos - pos_arr[np.newaxis, :])[0]
+
+        return sqr_dist <= _ChargePlaneRender.SQR_WIDTH
+
+
 def _create_element_renderer(ele: ElementBase) -> _FieldElementRenderBase:
 
     match ele:
 
         case PointSource():
             return _PointSourceRender(ele)
+
+        case ChargePlane():
+            return _ChargePlaneRender(ele)
 
         case _:
             raise ValueError("Unhandled element class")
@@ -125,9 +222,14 @@ class Window(pyglet.window.Window):
                             field: Field) -> None:
         """Draws the field elements of a field without drawing the field lines"""
 
+        bounds = np.array([
+            [0, self.width],
+            [0, self.height]
+        ])
+
         for ele in field.iter_elements():
 
-            shapes: Set = _create_element_renderer(ele).draw(self.field_elements_batch)
+            shapes: Set = _create_element_renderer(ele).draw(bounds, self.field_elements_batch)
 
             self.__field_shapes |= shapes
 
@@ -147,7 +249,7 @@ class Window(pyglet.window.Window):
 
         for ele in field.iter_elements():
 
-            starts, pos = ele.get_field_line_starts(fac=16)
+            starts, pos = ele.get_field_line_starts(clip_ranges, fac=4)
             line_starts_list.append(starts)
             postives_list.append(pos)
 
@@ -193,7 +295,7 @@ class Window(pyglet.window.Window):
 
             # If point is repeated (probably meaning the line was clipped) then stop drawing
             if np.all(np.isclose(prev, curr)):
-                break 
+                break
 
             line = pyglet.shapes.Line(
                 prev[0], prev[1],

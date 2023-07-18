@@ -2,8 +2,10 @@ from typing import Callable, List, Dict, Optional
 from abc import ABC, abstractmethod
 import tkinter as tk
 from tkinter import ttk
+from copy import copy
 from os.path import join as joinpath
-from field_element import ElementBase, PointSource
+from field_element import ElementBase, PointSource, ChargePlane
+import vectors
 import numpy as np
 
 
@@ -148,23 +150,36 @@ class AddElementWindow(tk.Toplevel):
             raise NotImplementedError()
 
         @abstractmethod
-        def create_instance(self, pos: np.ndarray, strength: float) -> ElementBase:
+        def create_instance(self, pos: np.ndarray, config: "AddElementWindow.Config") -> ElementBase:
             """Creates an instance of the element"""
             raise NotImplementedError()
 
     class __PointSource(__Element):
         def get_display_name(self) -> str: return "Point Source"
         def get_icon_path(self) -> str: return joinpath("element_icons", "placeholder.png")
-        def create_instance(self, pos: np.ndarray, strength: float) -> ElementBase: return PointSource(pos, strength)
+        def create_instance(self, pos: np.ndarray, config: "AddElementWindow.Config") -> ElementBase: return PointSource(pos, config.strength)
+
+    class __ChargePlane(__Element):
+        def get_display_name(self) -> str: return "Charge Plane"
+        def get_icon_path(self) -> str: return joinpath("element_icons", "placeholder.png")
+        def create_instance(self, pos: np.ndarray, config: "AddElementWindow.Config") -> ElementBase:
+            return ChargePlane(
+                pos,
+                vectors.angle_to_vec2d(config.angle + (np.pi/2)),
+                    # Offset by π/2 so that the "angle" represents the angle of the plane, not the normal of the plane
+                config.strength
+            )
 
     class Config:
         def __init__(
             self,
             strength: float,
-            element_gen: Callable[[np.ndarray, float], ElementBase]
+            angle: float,
+            element_gen: Callable[[np.ndarray, "AddElementWindow.Config"], ElementBase]
         ):
             self.strength = strength
-            self.create_element = lambda pos: element_gen(pos, self.strength)
+            self.angle = angle
+            self.create_element: Callable[[np.ndarray], ElementBase] = lambda pos: element_gen(pos, self)
 
     def __init__(self,
                  master,
@@ -185,6 +200,9 @@ class AddElementWindow(tk.Toplevel):
         self.__strength_var_raw = tk.DoubleVar(self)
         self.__strength_var_raw.set(1)  # Default to 1
 
+        self.__angle_var_raw = tk.DoubleVar(self)
+        self.__angle_var_raw.set(0)  # Default to 0
+
         # Create frames
 
         self.elements_frame = tk.Frame(self)
@@ -193,7 +211,8 @@ class AddElementWindow(tk.Toplevel):
         # Populate frames
 
         self.__populate_elements_frame([
-            AddElementWindow.__PointSource()
+            AddElementWindow.__PointSource(),
+            AddElementWindow.__ChargePlane(),
         ])
         self.__populate_config_frame()
 
@@ -206,17 +225,21 @@ class AddElementWindow(tk.Toplevel):
     def strength_config_val(self) -> float:
         return round(self.__strength_var_raw.get(), 0)
 
+    @property
+    def angle_config_val(self) -> float:
+        return round(self.__angle_var_raw.get(), 2)
+
     def __populate_elements_frame(self,
                                   elements: List[__Element]) -> None:
 
         for ele in elements:
 
-            _e = ele  # Storing here allows the lambdas to keep their values through the iterations
+            # _e = copy(ele)  # Storing here allows the lambdas to keep their values through the iterations
 
             item = self.__create_element_item(
                 self.elements_frame,
                 ele,
-                lambda: self.__select_element(_e)
+                lambda e=ele: self.__select_element(e)
             )
             self.__elements_items.append(item)
             item.pack(side=tk.TOP)
@@ -255,7 +278,7 @@ class AddElementWindow(tk.Toplevel):
 
         strength_frame = ttk.Frame(master)
 
-        strength_label = ttk.Label(strength_frame, text="Element Strength")
+        strength_label = ttk.Label(strength_frame, text="Strength")
 
         strength_slider_frame = ttk.Frame(strength_frame)
 
@@ -278,12 +301,42 @@ class AddElementWindow(tk.Toplevel):
 
         strength_frame.pack(side=tk.TOP)
 
-    def __create_config(self, gen_ele: Callable[[np.ndarray, float], ElementBase]) -> Config:
+        # Angle slider
+
+        angle_frame = ttk.Frame(master)
+
+        angle_label = ttk.Label(angle_frame, text="Angle")
+
+        angle_slider_frame = ttk.Frame(angle_frame)
+
+        angle_slider_label_l = ttk.Label(angle_slider_frame, text="0")
+        angle_slider_slider = tk.Scale(
+            angle_slider_frame,
+            from_=0,
+            to=2*np.pi,
+            orient="horizontal",
+            resolution=0.01,
+            variable=self.__angle_var_raw,
+        )
+        angle_slider_label_r = ttk.Label(angle_slider_frame, text="2π")
+
+        angle_slider_label_l.grid(row=0, column=0)
+        angle_slider_slider.grid(row=0, column=1)
+        angle_slider_label_r.grid(row=0, column=2)
+
+        angle_label.pack(side=tk.TOP)
+        angle_slider_frame.pack(side=tk.TOP)
+
+        angle_frame.pack(side=tk.TOP)
+
+    def __create_config(self, gen_ele: Callable[[np.ndarray, Config], ElementBase]) -> Config:
 
         strength = self.strength_config_val
+        angle = self.angle_config_val
 
         config = AddElementWindow.Config(
             strength,
+            angle,
             gen_ele
         )
 

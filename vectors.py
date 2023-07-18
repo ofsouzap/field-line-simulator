@@ -25,6 +25,29 @@ Returns:
     return np.diagonal(a @ b.T)
 
 
+def single_dot(a: np.ndarray, b: np.ndarray):
+    """Takes two vectors and computes their dot (aka scalar) product
+
+Parameters:
+
+    a - a vector
+
+    b - a vector
+
+Returns:
+
+    dot - the dot product of the vectors
+"""
+
+    assert a.ndim == b.ndim == 1, "Invalid input dimensionality"
+    assert a.shape[0] == b.shape[0], "Vector dimensions mismatch"
+
+    return many_dot(
+        a[np.newaxis, :],
+        b[np.newaxis, :],
+    )[0]
+
+
 def line_sqr_distance_to_point(line_as: np.ndarray, line_bs: np.ndarray, rs: np.ndarray) -> np.ndarray:
     """Calculates the minimum distance between multiple points and corresponding infinite lines"""
 
@@ -151,6 +174,59 @@ Parameters:
                 seg_starts + (on_line_dots[:, np.newaxis] * line_dirs)  # A position along the line segment
             )
         )
+    )
+
+
+def plane_closest_point_to_line_seg(plane_poss: np.ndarray, plane_norms: np.ndarray, seg_starts: np.ndarray, seg_ends: np.ndarray) -> np.ndarray:
+    """Finds the closest point on planes to corresponding line segments"""
+
+    assert seg_starts.ndim == 2, "Invalid input dimensionality"
+    assert seg_ends.ndim == 2, "Invalid input dimensionality"
+    assert plane_poss.ndim == 2, "Invalid input dimensionality"
+    assert plane_norms.ndim == 2, "Invalid input dimensionality"
+    assert seg_starts.shape == seg_ends.shape == plane_poss.shape == plane_norms.shape, "Inputs don't have the same shape"
+
+
+    # Consider vertices of line segments
+
+    start_displacements = seg_starts - plane_poss
+    end_displacements = seg_ends - plane_poss
+
+    start_plane_displacements = plane_norms * np.tile(many_dot(start_displacements, plane_norms), (seg_starts.shape[1], 1)).T
+    end_plane_displacements = plane_norms * np.tile(many_dot(end_displacements, plane_norms), (seg_starts.shape[1], 1)).T
+
+    start_closest_points = plane_poss + (start_displacements - start_plane_displacements)  # type: ignore
+    end_closest_points = plane_poss + (end_displacements - end_plane_displacements)  # type: ignore
+
+    start_closest_sqr_distances = sqr_magnitudes(start_plane_displacements)
+    end_closest_sqr_distances = sqr_magnitudes(end_plane_displacements)
+
+
+    plane_ds = many_dot(plane_poss, plane_norms)
+
+    intersect_ts = (plane_ds - many_dot(seg_starts, plane_norms)) / (many_dot(seg_ends-seg_starts, plane_norms))
+    intersect_poss = \
+        seg_starts + \
+        (seg_ends - seg_starts) * np.tile(intersect_ts, (seg_starts.shape[1],1)).T
+
+    return np.where(
+        mat_mask((intersect_ts > 0) & (intersect_ts < 1), seg_starts.shape[1]),
+        intersect_poss,
+        np.where(
+            mat_mask(start_closest_sqr_distances < end_closest_sqr_distances, seg_starts.shape[1]),
+            start_closest_points,
+            end_closest_points
+        )
+    )
+
+
+def plane_closest_point_to_point(plane_poss: np.ndarray, plane_norms: np.ndarray, rs: np.ndarray) -> np.ndarray:
+    """Finds the closest point on planes to corresponding points"""
+    return plane_closest_point_to_line_seg(
+        plane_poss,
+        plane_norms,
+        rs,
+        rs
     )
 
 
@@ -284,3 +360,12 @@ Returns:
 """
 
     return np.tile(mask, (n, 1)).T
+
+
+def angle_to_vec2d(angle: float) -> np.ndarray:
+    """Takes an angle and returns a 2D unit vector pointing in that direction, taking the angle as an azimuthal angle from the x-axis"""
+
+    return np.array([
+        np.cos(angle),
+        np.sin(angle)
+    ])
