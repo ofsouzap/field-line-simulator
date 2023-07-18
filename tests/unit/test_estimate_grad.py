@@ -1,5 +1,5 @@
 import numpy as np
-from vectors import grad, sqr_magnitudes
+from vectors import estimate_grad, sqr_magnitudes
 from _test_util import *
 
 def _test_grad_value(field_func, points: np.ndarray, expectations: np.ndarray) -> None:
@@ -9,7 +9,7 @@ def _test_grad_value(field_func, points: np.ndarray, expectations: np.ndarray) -
     assert expectations.ndim == 2
     assert expectations.shape[0] == points.shape[0]
 
-    output = grad(field_func, points)
+    output = estimate_grad(field_func, points)
 
     compare_arrs(output, expectations)
 

@@ -30,7 +30,7 @@ class Field:
 
         vals = np.zeros(shape=(poss.shape[0]))
 
-        for ele in self.__elements:
+        for ele in self.iter_elements():
 
             vals += ele.get_field_at(poss)
 
@@ -38,7 +38,13 @@ class Field:
 
     def grad(self, poss: np.ndarray) -> np.ndarray:
         """Takes an array of position vectors and returns the grad of the field at those positions"""
-        return vectors.grad(self.evaluate, poss)
+
+        grads = np.zeros_like(poss)
+
+        for ele in self.iter_elements():
+            grads += ele.get_grad_at(poss)
+
+        return grads
 
     def line_seg_nearest_element(self,
                                  seg_starts: np.ndarray,

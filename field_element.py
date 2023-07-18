@@ -57,6 +57,20 @@ Returns:
         pass
 
     @abstractmethod
+    def get_grad_at(self, poss: np.ndarray) -> np.ndarray:
+        """Gets the value of the vector gradient of the element's field at the point or points given
+
+Parameters:
+
+    poss - a 2D array of position vectors for the positions to evaluate the field at
+
+Returns:
+
+    values - a 1D array containing the values of the field's vector gradient at the requested positions
+"""
+        pass
+
+    @abstractmethod
     def find_line_seg_nearest_point(self, seg_starts: np.ndarray, seg_ends: np.ndarray) -> np.ndarray:
         """Find the nearest points of the element to the provided line segments"""
         pass
@@ -125,6 +139,27 @@ class PointSource(ElementBase):
 
         return values
 
+    def get_grad_at(self, poss: np.ndarray) -> np.ndarray:
+
+        displacements = poss - self.pos
+
+        dists = vectors.magnitudes(displacements)
+
+        dists_invcube_mat = np.tile(
+            np.power(dists, np.repeat(-3, poss.shape[0])),
+            (poss.shape[1],1),
+        ).T
+
+        unit_grads = np.where(
+            vectors.mat_mask(np.isclose(dists, 0), poss.shape[1]),
+            np.zeros_like(poss),
+            -4 * displacements * dists_invcube_mat
+        )
+
+        grads = self.strength * unit_grads
+
+        return grads
+
     def find_line_seg_nearest_point(self, seg_starts: np.ndarray, seg_ends: np.ndarray) -> np.ndarray:
         return np.tile(self.pos, (seg_starts.shape[0], 1))
 
@@ -172,7 +207,7 @@ class ChargePlane(ElementBase):
 
         super().__init__(pos, strength > 0, strength < 0)
 
-        self._normal = normal
+        self._normal = normal / vectors.magnitudes(normal)[0]
         self._strength = strength
 
     @property
@@ -194,6 +229,8 @@ class ChargePlane(ElementBase):
 
         assert poss.ndim in [2, 3], "Invalid input dimensionality"
 
+        # TODO - this formula is incorrect, use the correct one
+
         dists = vectors.plane_distance_to_point(
             plane_poss=np.tile(self.pos, (poss.shape[0],1)),
             plane_norms=np.tile(self.normal, (poss.shape[0],1)),
@@ -207,6 +244,15 @@ class ChargePlane(ElementBase):
         )
 
         return values
+
+    def get_grad_at(self, poss: np.ndarray) -> np.ndarray:
+
+        # TODO - find a proper formula for this
+
+        return vectors.estimate_grad(
+            self.get_field_at,
+            poss
+        )
 
     def find_line_seg_nearest_point(self, seg_starts: np.ndarray, seg_ends: np.ndarray) -> np.ndarray:
 

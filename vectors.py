@@ -249,7 +249,7 @@ def plane_distance_to_point(plane_poss: np.ndarray, plane_norms: np.ndarray, rs:
     return distances
 
 
-def grad(field_func: Callable[[np.ndarray], np.ndarray], poss: np.ndarray) -> np.ndarray:
+def estimate_grad(field_func: Callable[[np.ndarray], np.ndarray], poss: np.ndarray) -> np.ndarray:
     """Approximates the gradient vector of a scalar field at some positions. At singularities, a grad value of 0 is used
 
 Parameters:
