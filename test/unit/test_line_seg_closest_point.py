@@ -1,4 +1,4 @@
-from _test_util import *
+from test._test_util import *
 import numpy as np
 from vectors import line_seg_closest_point
 

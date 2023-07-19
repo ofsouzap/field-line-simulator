@@ -1,6 +1,6 @@
 import numpy as np
 from vectors import plane_distance_to_point, many_normalise
-from _test_util import *
+from test._test_util import *
 
 def test_plane_point():
 

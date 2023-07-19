@@ -1,6 +1,6 @@
 import numpy as np
 from vectors import estimate_grad, sqr_magnitudes
-from _test_util import *
+from test._test_util import *
 
 def _test_grad_value(field_func, points: np.ndarray, expectations: np.ndarray) -> None:
 

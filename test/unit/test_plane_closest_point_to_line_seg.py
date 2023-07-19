@@ -1,4 +1,4 @@
-from _test_util import *
+from test._test_util import *
 from vectors import plane_closest_point_to_line_seg, many_normalise
 import numpy as np
 

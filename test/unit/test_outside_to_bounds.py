@@ -1,6 +1,6 @@
 import numpy as np
 from vectors import outside_bounds
-from _test_util import *
+from test._test_util import *
 
 def test_within():
 

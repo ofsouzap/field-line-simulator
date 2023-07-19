@@ -1,6 +1,6 @@
 import numpy as np
 from vectors import sqr_magnitudes, magnitudes
-from _test_util import *
+from test._test_util import *
 
 def do_test(inp: np.ndarray, exp: np.ndarray):
 

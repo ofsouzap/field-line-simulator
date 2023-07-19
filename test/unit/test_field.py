@@ -1,7 +1,7 @@
 import numpy as np
 from field import Field
 from field_element import PointSource
-from _test_util import *
+from test._test_util import *
 
 
 def test_single_point_positive():

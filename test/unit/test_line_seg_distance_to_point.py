@@ -1,4 +1,4 @@
-from _test_util import *
+from test._test_util import *
 from vectors import line_seg_distance_to_point
 import numpy as np
 
