@@ -105,19 +105,19 @@ class _ChargePlaneRender(_FieldElementRenderBase):
 
     def get_color(self) -> Tuple[int, int, int, int]:
 
-        if self.cp.strength == 0:
+        if self.cp.strength_density == 0:
             return WHITE
-        elif self.cp.strength > 0:
+        elif self.cp.strength_density > 0:
             return (
                 255,
-                128*(1-round(np.tanh(self.cp.strength/50))),
-                128*(1-round(np.tanh(self.cp.strength/50))),
+                128*(1-round(np.tanh(self.cp.strength_density/50))),
+                128*(1-round(np.tanh(self.cp.strength_density/50))),
                 255
             )
         else:
             return (
-                128*(1-round(np.tanh(-self.cp.strength/50))),
-                128*(1-round(np.tanh(-self.cp.strength/50))),
+                128*(1-round(np.tanh(-self.cp.strength_density/50))),
+                128*(1-round(np.tanh(-self.cp.strength_density/50))),
                 255,
                 255
             )
@@ -249,7 +249,7 @@ class Window(pyglet.window.Window):
 
         for ele in field.iter_elements():
 
-            starts, pos = ele.get_field_line_starts(clip_ranges, fac=4)
+            starts, pos = ele.get_field_line_starts(clip_ranges, fac=8)
             line_starts_list.append(starts)
             postives_list.append(pos)
 

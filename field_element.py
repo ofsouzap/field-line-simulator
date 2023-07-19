@@ -10,6 +10,9 @@ LINE_SPAWN_OFFSET = EPS * 3
 """How far away from a field element to start a line"""
 
 
+class UnboundedException(Exception): pass
+
+
 class ElementBase(ABC):
 
     def __init__(self, pos: np.ndarray, emitter: bool, absorber: bool):
@@ -192,15 +195,17 @@ class PointSource(ElementBase):
 class ChargePlane(ElementBase):
     """An infinite plane of constant charge"""
 
+    STRENGTH_DENSITY_FACTOR: float = 0.01
+
     def __init__(self,
                  pos: np.ndarray,
                  normal: np.ndarray,
-                 strength: float):
+                 strength_density: float):
 
-        super().__init__(pos, strength > 0, strength < 0)
+        super().__init__(pos, strength_density > 0, strength_density < 0)
 
         self._normal = normal / vectors.magnitudes(normal)[0]
-        self._strength = strength
+        self._strength_density = strength_density * ChargePlane.STRENGTH_DENSITY_FACTOR
 
     @property
     def normal(self) -> np.ndarray:
@@ -214,36 +219,28 @@ class ChargePlane(ElementBase):
         )
 
     @property
-    def strength(self) -> float:
-        return self._strength
+    def strength_density(self) -> float:
+        return self._strength_density
 
     def get_field_at(self, poss: np.ndarray) -> np.ndarray:
-
-        assert poss.ndim in [2, 3], "Invalid input dimensionality"
-
-        # TODO - this formula is incorrect, use the correct one
-
-        dists = vectors.plane_distance_to_point(
-            plane_poss=np.tile(self.pos, (poss.shape[0],1)),
-            plane_norms=np.tile(self.normal, (poss.shape[0],1)),
-            rs=poss
-        )
-
-        values = np.where(
-            np.isclose(dists, 0),
-            np.repeat(np.inf, dists.shape[0]),
-            np.divide(self.strength, dists*dists)
-        )
-
-        return values
+        raise UnboundedException("Field from infinite plane is infinite")
 
     def get_grad_at(self, poss: np.ndarray) -> np.ndarray:
 
-        # TODO - find a proper formula for this
+        grad_mag = self.strength_density / 2
 
-        return vectors.estimate_grad(
-            self.get_field_at,
-            poss
+        pos_displacements = poss - self.pos  # (N,dim)
+        pos_norm_dists = vectors.many_dot(pos_displacements, np.tile(self.normal, (poss.shape[0],1)))  # (N,)
+        pos_norm_dist_mags = np.abs(pos_norm_dists)  # (N,)
+        signs = -pos_norm_dists / pos_norm_dist_mags  # (N,)
+
+        grad_dirs = signs[np.newaxis, :].T * self.normal
+        grads = grad_dirs * grad_mag
+
+        return np.where(
+            vectors.mat_mask(np.isclose(pos_norm_dists, 0), poss.shape[1]),
+            np.zeros_like(poss),
+            grads
         )
 
     def find_line_seg_nearest_point(self, seg_starts: np.ndarray, seg_ends: np.ndarray) -> np.ndarray:
@@ -259,7 +256,7 @@ class ChargePlane(ElementBase):
 
     def __get_field_line_spacing(self) -> float:
         """Gets the distance between lines to draw"""
-        return round(50+950*(1-np.tanh(abs(self.strength))))
+        return round(50+950*(1-np.tanh(abs(self.strength_density))))
 
     def __get_field_line_starts_2d(self, bounds: np.ndarray, fac: int) -> Tuple[np.ndarray, np.ndarray]:
 
@@ -317,7 +314,7 @@ class ChargePlane(ElementBase):
 
         line_starts = np.repeat(line_start_roots, 2, axis=0) + root_offsets
 
-        positives = np.repeat(self.strength > 0, line_starts.shape[0])
+        positives = np.repeat(self.strength_density > 0, line_starts.shape[0])
 
         return line_starts, positives
 
