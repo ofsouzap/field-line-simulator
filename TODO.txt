@@ -1,5 +1,9 @@
 - fix division by 0 errors
-- show current mode as icon somewhere on visualisation window
+- fix charge plane render click detection
+- perform field line calculations and shape drawing on other thread whilst showing spinning loading icon then refresh
+    - don't allow editing the field whilst calculating
+- settings window
+- shortcuts
 - allow moving existing field elements around the area
 - allow saving and loading fields (stored as collections of field elements)
 - allow displaying areas of high/low divergence and/or curl of the field

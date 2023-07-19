@@ -1,6 +1,7 @@
 import pyglet
 from abc import ABC, abstractmethod
 from typing import Optional, Callable, Set, Tuple
+from os.path import join as joinpath
 import vectors
 from field import Field
 from field_element import ElementBase, PointSource, ChargePlane
@@ -9,12 +10,27 @@ import numpy as np
 from _debug_util import Timer
 
 
+def _resource(*path: str) -> str:
+    return joinpath("resources", *path)
+
+
 WINDOW_TITLE = "Field Line Simulator"
 WINDOW_DEFAULT_WIDTH = 720
 WINDOW_DEFAULT_HEIGHT = 480
 
 
-ARROWHEAD_LENGTH = 5
+ARROWHEAD_LENGTH: int = 5
+STATUS_ICON_POSITION: Tuple[int, int] = (0, 0)
+
+
+STATUS_ICON_RES_PATH_ADD = _resource("status_icons", "add.png")
+STATUS_ICON_RES_PATH_DELETE = _resource("status_icons", "delete.png")
+STATUS_ICON_RES_PATH_LOADING = _resource("status_icons", "loading.png")
+
+
+status_icon_add = pyglet.image.load(STATUS_ICON_RES_PATH_ADD)
+status_icon_delete = pyglet.image.load(STATUS_ICON_RES_PATH_DELETE)
+status_icon_loading = pyglet.image.load(STATUS_ICON_RES_PATH_LOADING)
 
 
 WHITE = (255, 255, 255, 255)
@@ -219,6 +235,10 @@ class Window(pyglet.window.Window):
         self.field_elements_batch = pyglet.graphics.Batch()
         self.__field_shapes: Set = set()
 
+        self.add_mode_sprite = pyglet.sprite.Sprite(status_icon_add, x=STATUS_ICON_POSITION[0], y=STATUS_ICON_POSITION[1])
+        self.delete_mode_sprite = pyglet.sprite.Sprite(status_icon_delete, x=STATUS_ICON_POSITION[0], y=STATUS_ICON_POSITION[1])
+        self.__click_mode_sprite: Optional[pyglet.sprite.Sprite] = None
+
         self.mouse_press_callback = on_mouse_press
 
     @property
@@ -228,6 +248,15 @@ class Window(pyglet.window.Window):
             [0.0, self.width*settings.VIEWPORT_SCALE_FAC],
             [0.0, self.height*settings.VIEWPORT_SCALE_FAC]
         ])
+
+    def set_click_mode_none(self) -> None:
+        self.__click_mode_sprite = None
+
+    def set_click_mode_add(self) -> None:
+        self.__click_mode_sprite = self.add_mode_sprite
+
+    def set_click_mode_delete(self) -> None:
+        self.__click_mode_sprite = self.delete_mode_sprite
 
     def draw_field_elements(self,
                             field: Field) -> None:
@@ -349,14 +378,16 @@ class Window(pyglet.window.Window):
         return np.around(pos, decimals=0).astype(int)
 
     def on_draw(self) -> None:
-        """Clear screen and draw batch of shapes"""
+        """Clear screen and draw batches of shapes"""
 
         self.clear()
 
-        # Draw field lines and then field elements so that field elements are still visible
-
         self.field_lines_batch.draw()
+
         self.field_elements_batch.draw()
+
+        if self.__click_mode_sprite is not None:
+            self.__click_mode_sprite.draw()
 
     def update(self, delta_time: float) -> None:
 
@@ -409,6 +440,15 @@ class Controller:
                 return True
 
         return False
+
+    def set_click_mode_none(self):
+        self.__window.set_click_mode_none()
+
+    def set_click_mode_add(self):
+        self.__window.set_click_mode_add()
+
+    def set_click_mode_delete(self):
+        self.__window.set_click_mode_delete()
 
     @staticmethod
     def run_app() -> None:

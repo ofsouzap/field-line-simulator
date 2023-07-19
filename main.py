@@ -74,18 +74,46 @@ def main():
 
     click_mode = ClickMode()
 
+    # Action callbacks
+
+    def visualisation_clicked(x, y, btn, mods):
+        click_mode.on_click(x, y, visualisation_controller)
+
+    def save():
+        print("Save pressed")
+
+    def load():
+        print("Load pressed")
+
+    def set_click_mode_add(config: AddConfig):
+        visualisation_controller.set_click_mode_add()
+        click_mode.set_mode_add(config)
+
+    def set_click_mode_delete():
+        visualisation_controller.set_click_mode_delete()
+        click_mode.set_mode_delete()
+
+    def settings():
+        print("Settings pressed")
+
+    def help():
+        print("Help pressed")
+
+    def recalculate():
+        print("Recalculate pressed")
+
     # Create windows
 
-    visualisation_controller = create_visualisation_window(on_mouse_press=lambda x, y, btn, mods: click_mode.on_click(x, y, visualisation_controller))
+    visualisation_controller = create_visualisation_window(on_mouse_press=visualisation_clicked)
 
     controls_window = ControlsWindow(
-        save_callback=lambda: print("Save pressed"),
-        load_callback=lambda: print("Load pressed"),
-        set_add_config_callback=lambda config: click_mode.set_mode_add(config),
-        delete_callback=click_mode.set_mode_delete,
-        settings_callback=lambda: print("Settings pressed"),
-        help_callback=lambda: print("Help pressed"),
-        recalculate_callback=lambda: print("Recalculate pressed")
+        save_callback=save,
+        load_callback=load,
+        set_add_config_callback=set_click_mode_add,
+        delete_callback=set_click_mode_delete,
+        settings_callback=settings,
+        help_callback=help,
+        recalculate_callback=recalculate
     )
 
     # Create visualisation window thread
