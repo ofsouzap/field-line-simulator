@@ -16,21 +16,21 @@
             "name": "Profile Field Line Tracing",
             "type": "python",
             "request": "launch",
-            "module": "tests.profiling.profile_field_line_tracing",
+            "module": "test.profiling.profile_field_line_tracing",
             "justMyCode": true
         },
         {
             "name": "Plot Eval Field Growth",
             "type": "python",
             "request": "launch",
-            "module": "tests.profiling.plot_eval_field_growth",
+            "module": "test.profiling.plot_eval_field_growth",
             "justMyCode": true
         },
         {
             "name": "Plot Line Trace Iteration Growth",
             "type": "python",
             "request": "launch",
-            "module": "tests.profiling.plot_trace_field_line_step_growth",
+            "module": "test.profiling.plot_trace_field_line_step_growth",
             "justMyCode": true
         },
         {
