@@ -1,7 +1,6 @@
-- create charge plane field element (infinite plane of constant charge)
-- add grad_at method to field elements, see if this increases performance
-- fix division by 0 errors
+- stop using screen pixels as unit of measurement, have calculations work in different units and then expand for screen display
 - add arrowheads to field lines
+- fix division by 0 errors
 - check field lines are being generated uniformly around point source. on a single point source can see that it doesn't look correct
 - allow moving existing field elements around the area
 - allow saving and loading fields (stored as collections of field elements)
