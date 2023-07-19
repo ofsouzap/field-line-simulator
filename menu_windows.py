@@ -31,13 +31,13 @@ class ControlsWindow(tk.Tk):
 
     WINDOW_TITLE = "Fields - Controls"
 
-    SAVE_BTN_IMG = joinpath("icons", "save.png")
-    LOAD_BTN_IMG = joinpath("icons", "load.png")
-    ADD_BTN_IMG = joinpath("icons", "placeholder.png")
-    DELETE_BTN_IMG = joinpath("icons", "placeholder.png")
-    SETTINGS_BTN_IMG = joinpath("icons", "placeholder.png")
-    HELP_BTN_IMG = joinpath("icons", "placeholder.png")
-    RECALCULATE_BTN_IMG = joinpath("icons", "placeholder.png")
+    SAVE_BTN_IMG = joinpath("controls_icons", "save.png")
+    LOAD_BTN_IMG = joinpath("controls_icons", "load.png")
+    ADD_BTN_IMG = joinpath("controls_icons", "add.png")
+    DELETE_BTN_IMG = joinpath("controls_icons", "delete.png")
+    SETTINGS_BTN_IMG = joinpath("controls_icons", "placeholder.png")
+    HELP_BTN_IMG = joinpath("controls_icons", "placeholder.png")
+    RECALCULATE_BTN_IMG = joinpath("controls_icons", "placeholder.png")
 
     def __init__(self,
                  save_callback: Callable[[], None],
@@ -156,12 +156,12 @@ class AddElementWindow(tk.Toplevel):
 
     class __PointSource(__Element):
         def get_display_name(self) -> str: return "Point Source"
-        def get_icon_path(self) -> str: return joinpath("element_icons", "placeholder.png")
+        def get_icon_path(self) -> str: return joinpath("element_icons", "point_source.png")
         def create_instance(self, pos: np.ndarray, config: "AddElementWindow.Config") -> ElementBase: return PointSource(pos, config.strength)
 
     class __ChargePlane(__Element):
         def get_display_name(self) -> str: return "Charge Plane"
-        def get_icon_path(self) -> str: return joinpath("element_icons", "placeholder.png")
+        def get_icon_path(self) -> str: return joinpath("element_icons", "plane.png")
         def create_instance(self, pos: np.ndarray, config: "AddElementWindow.Config") -> ElementBase:
             return ChargePlane(
                 pos,

@@ -1,6 +1,5 @@
-- add arrowheads to field lines
 - fix division by 0 errors
-- check field lines are being generated uniformly around point source. on a single point source can see that it doesn't look correct
+- show current mode as icon somewhere on visualisation window
 - allow moving existing field elements around the area
 - allow saving and loading fields (stored as collections of field elements)
 - allow displaying areas of high/low divergence and/or curl of the field
