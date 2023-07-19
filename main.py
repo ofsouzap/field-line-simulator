@@ -53,7 +53,7 @@ class ClickMode:
 
         assert self.add_config is not None, "Trying to add element without setting add_config"
 
-        new_ele = self.add_config.create_element(np.array([x, y], dtype=float))
+        new_ele = self.add_config.create_element(np.array([x*settings.VIEWPORT_SCALE_FAC, y*settings.VIEWPORT_SCALE_FAC], dtype=float))
 
         controller.add_field_element(new_ele)
 

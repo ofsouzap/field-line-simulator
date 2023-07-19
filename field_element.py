@@ -3,6 +3,7 @@ from typing import Tuple, Optional
 import numpy as np
 import vectors
 from settings import EPS
+import settings
 
 
 # Make sure that the line spawn offset isn't so small that the grad calculation goes over the field element
@@ -79,18 +80,18 @@ Returns:
         pass
 
     @abstractmethod
-    def _get_field_line_starts(self, bounds: np.ndarray, fac: int, dim: int) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_field_line_starts(self, bounds: np.ndarray, fac: float, dim: int) -> Tuple[np.ndarray, np.ndarray]:
         pass
 
 
-    def get_field_line_starts(self, bounds: np.ndarray, fac: int = 1, dim: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+    def get_field_line_starts(self, bounds: np.ndarray, fac: float = 1.0, dim: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
         """Calculates and returns the positions at which field lines from this element should be started and which are positive-directed lines taking into account the element's strength
 
 Parameters:
 
     bounds - an array of pairs for the bounds of the region being rendered
 
-    fac (default 1) - how much to multiply the number of lines decided to create by
+    fac (default 1.0) - how much to multiply the number of lines decided to create by
 
     dim (optional) - the number of components each position should have. Usually will be 2 for a 2D space or 3 for a 3D space
 
@@ -164,9 +165,9 @@ class PointSource(ElementBase):
     def __field_line_count_3d(self) -> int:
         raise NotImplementedError()  # TODO
 
-    def __get_field_line_starts_2d(self, fac: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+    def __get_field_line_starts_2d(self, fac: float = 1.0) -> Tuple[np.ndarray, np.ndarray]:
 
-        phi = np.linspace(0, 2*np.pi, self.__field_line_count_2d() * fac, endpoint=False)
+        phi = np.linspace(0, 2*np.pi, round(self.__field_line_count_2d() * fac), endpoint=False)
         dx = np.cos(phi) * LINE_SPAWN_OFFSET
         dy = np.sin(phi) * LINE_SPAWN_OFFSET
 
@@ -178,11 +179,11 @@ class PointSource(ElementBase):
 
         return line_starts, positives
 
-    def __get_field_line_starts_3d(self, fac: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+    def __get_field_line_starts_3d(self, fac: float = 1) -> Tuple[np.ndarray, np.ndarray]:
 
         raise NotImplementedError()  # TODO (make sure equally spaced, not concentrated around any poles)
 
-    def _get_field_line_starts(self, bounds: np.ndarray, fac: int, dim: int) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_field_line_starts(self, bounds: np.ndarray, fac: float, dim: int) -> Tuple[np.ndarray, np.ndarray]:
 
         if dim == 2:
             return self.__get_field_line_starts_2d(fac)
@@ -258,7 +259,7 @@ class ChargePlane(ElementBase):
         """Gets the distance between lines to draw"""
         return round(50+950*(1-np.tanh(abs(self.strength_density))))
 
-    def __get_field_line_starts_2d(self, bounds: np.ndarray, fac: int) -> Tuple[np.ndarray, np.ndarray]:
+    def __get_field_line_starts_2d(self, bounds: np.ndarray, fac: float) -> Tuple[np.ndarray, np.ndarray]:
 
         corners = np.array([
             [bounds[0,0], bounds[1,0]],  # minumum x, minumum y
@@ -299,7 +300,7 @@ class ChargePlane(ElementBase):
         point_dist: float = vectors.magnitudes(end_point - start_point)[0]
 
         line_spacing: float = self.__get_field_line_spacing()
-        line_count: int = round(fac * point_dist / line_spacing)
+        line_count: int = round(fac * point_dist / (line_spacing * settings.VIEWPORT_SCALE_FAC))
 
         xs = np.linspace(start_point[0], end_point[0], line_count)
         ys = np.linspace(start_point[1], end_point[1], line_count)
@@ -318,11 +319,11 @@ class ChargePlane(ElementBase):
 
         return line_starts, positives
 
-    def __get_field_line_starts_3d(self, bounds: np.ndarray, fac: int) -> Tuple[np.ndarray, np.ndarray]:
+    def __get_field_line_starts_3d(self, bounds: np.ndarray, fac: float) -> Tuple[np.ndarray, np.ndarray]:
 
         raise NotImplementedError()  # TODO
 
-    def _get_field_line_starts(self, bounds: np.ndarray, fac: int, dim: int) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_field_line_starts(self, bounds: np.ndarray, fac: float, dim: int) -> Tuple[np.ndarray, np.ndarray]:
 
         if dim == 2:
             return self.__get_field_line_starts_2d(bounds, fac)

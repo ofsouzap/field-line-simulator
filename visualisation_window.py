@@ -4,6 +4,7 @@ from typing import Optional, Callable, Set, Tuple
 import vectors
 from field import Field
 from field_element import ElementBase, PointSource, ChargePlane
+import settings
 import numpy as np
 from _debug_util import Timer
 
@@ -42,7 +43,7 @@ Returns:
         raise NotImplementedError()
 
     @abstractmethod
-    def point_in_bounds(self, posx: int, posy: int) -> bool:
+    def point_in_draw_bounds(self, posx: int, posy: int) -> bool:
         """Checks if the point specified lies in the region that the rendered element is in"""
         raise NotImplementedError()
 
@@ -77,8 +78,8 @@ class _PointSourceRender(_FieldElementRenderBase):
     def draw(self, draw_bounds: np.ndarray, batch: pyglet.graphics.Batch) -> Set:
 
         circle = pyglet.shapes.Circle(
-            x=round(self.ps.x),
-            y=round(self.ps.y),
+            x=round(self.ps.x/settings.VIEWPORT_SCALE_FAC),
+            y=round(self.ps.y/settings.VIEWPORT_SCALE_FAC),
             radius=_PointSourceRender.RADIUS,
             color=self.get_color(),
             batch=batch
@@ -86,11 +87,11 @@ class _PointSourceRender(_FieldElementRenderBase):
 
         return {circle}
 
-    def point_in_bounds(self, posx: int, posy: int) -> bool:
+    def point_in_draw_bounds(self, posx: int, posy: int) -> bool:
 
         pos_vec = np.array([posx, posy], dtype=float)
 
-        sqr_dist = vectors.sqr_magnitudes(pos_vec - self.ps.pos)[0]
+        sqr_dist = vectors.sqr_magnitudes(pos_vec - (self.ps.pos/settings.VIEWPORT_SCALE_FAC))[0]
 
         return sqr_dist <= _PointSourceRender.SQR_RADIUS
 
@@ -160,10 +161,10 @@ class _ChargePlaneRender(_FieldElementRenderBase):
             yend = self.cp.pos[1] + ((xend - self.cp.pos[0]) * plane_grad)
 
         line = pyglet.shapes.Line(
-            x=xstart,
-            y=ystart,
-            x2=xend,
-            y2=yend,
+            x=xstart/settings.VIEWPORT_SCALE_FAC,
+            y=ystart/settings.VIEWPORT_SCALE_FAC,
+            x2=xend/settings.VIEWPORT_SCALE_FAC,
+            y2=yend/settings.VIEWPORT_SCALE_FAC,
             width=_ChargePlaneRender.WIDTH,
             color=self.get_color(),
             batch=batch
@@ -171,14 +172,13 @@ class _ChargePlaneRender(_FieldElementRenderBase):
 
         return {line}
 
-    def point_in_bounds(self, posx: int, posy: int) -> bool:
+    def point_in_draw_bounds(self, posx: int, posy: int) -> bool:
 
         pos_arr = np.array([posx, posy])
 
-        closest_plane_pos = vectors.plane_closest_point_to_line_seg(
-            self.cp.pos[np.newaxis, :],
-            self.cp.normal[np.newaxis, :],
-            pos_arr[np.newaxis, :],
+        closest_plane_pos = vectors.plane_closest_point_to_point(
+            (self.cp.pos/settings.VIEWPORT_SCALE_FAC)[np.newaxis, :],
+            (self.cp.normal/settings.VIEWPORT_SCALE_FAC)[np.newaxis, :],
             pos_arr[np.newaxis, :]
         )
 
@@ -218,18 +218,21 @@ class Window(pyglet.window.Window):
 
         self.mouse_press_callback = on_mouse_press
 
+    @property
+    def clip_bounds(self) -> np.ndarray:
+        """The range of positions in world-space that should be rendered"""
+        return np.array([
+            [0.0, self.width*settings.VIEWPORT_SCALE_FAC],
+            [0.0, self.height*settings.VIEWPORT_SCALE_FAC]
+        ])
+
     def draw_field_elements(self,
                             field: Field) -> None:
         """Draws the field elements of a field without drawing the field lines"""
 
-        bounds = np.array([
-            [0, self.width],
-            [0, self.height]
-        ])
-
         for ele in field.iter_elements():
 
-            shapes: Set = _create_element_renderer(ele).draw(bounds, self.field_elements_batch)
+            shapes: Set = _create_element_renderer(ele).draw(self.clip_bounds, self.field_elements_batch)
 
             self.__field_shapes |= shapes
 
@@ -239,17 +242,12 @@ class Window(pyglet.window.Window):
 
         # Generate field line generation data
 
-        clip_ranges = np.array([
-            [0, self.width],
-            [0, self.height]
-        ])
-
         line_starts_list = []
         postives_list = []
 
         for ele in field.iter_elements():
 
-            starts, pos = ele.get_field_line_starts(clip_ranges, fac=8)
+            starts, pos = ele.get_field_line_starts(self.clip_bounds, fac=8)
             line_starts_list.append(starts)
             postives_list.append(pos)
 
@@ -266,7 +264,7 @@ class Window(pyglet.window.Window):
                 line_starts,
                 500,
                 positives,
-                clip_ranges=clip_ranges
+                clip_ranges=self.clip_bounds
             )
 
         # Plot calculated lines
@@ -298,8 +296,8 @@ class Window(pyglet.window.Window):
                 break
 
             line = pyglet.shapes.Line(
-                prev[0], prev[1],
-                curr[0], curr[1],
+                prev[0]/settings.VIEWPORT_SCALE_FAC, prev[1]/settings.VIEWPORT_SCALE_FAC,
+                curr[0]/settings.VIEWPORT_SCALE_FAC, curr[1]/settings.VIEWPORT_SCALE_FAC,
                 batch=self.field_lines_batch
             )
 
@@ -366,11 +364,11 @@ class Controller:
         self.redraw_only_elements()
 
     def try_delete_field_element_at(self, posx: int, posy: int) -> bool:
-        """Tries to remove an element at the position specified. Returns whether one was found"""
+        """Tries to remove an element at the screen position specified. Returns whether one was found"""
 
         for ele in self.__field.iter_elements():
 
-            if _create_element_renderer(ele).point_in_bounds(posx, posy):
+            if _create_element_renderer(ele).point_in_draw_bounds(posx, posy):
                 self.__field.remove_element(ele)
                 self.redraw_only_elements()
                 return True
