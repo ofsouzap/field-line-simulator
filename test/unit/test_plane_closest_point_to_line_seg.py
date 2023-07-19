@@ -40,7 +40,7 @@ def test_through_plane():
         [0.9836065574, -0.9836065574],
     ])
 
-    outs = plane_closest_point_to_line_seg(line_as, line_bs, plane_poss, plane_norms)
+    outs = plane_closest_point_to_line_seg(plane_poss, plane_norms, line_as, line_bs)
 
     compare_arrs(outs, exps)
 
@@ -82,6 +82,6 @@ def test_closer_to_vertices():
         [ 1.2307692308,  1.6538461538],
     ])
 
-    outs = plane_closest_point_to_line_seg(line_as, line_bs, plane_poss, plane_norms)
+    outs = plane_closest_point_to_line_seg(plane_poss, plane_norms, line_as, line_bs)
 
     compare_arrs(outs, exps)
