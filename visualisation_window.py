@@ -14,6 +14,9 @@ WINDOW_DEFAULT_WIDTH = 720
 WINDOW_DEFAULT_HEIGHT = 480
 
 
+ARROWHEAD_LENGTH = 5
+
+
 WHITE = (255, 255, 255, 255)
 BLACK = (0, 0, 0, 255)
 RED = (255, 0, 0, 255)
@@ -270,15 +273,22 @@ class Window(pyglet.window.Window):
         # Plot calculated lines
 
         with Timer("Plot Lines"):  # TODO - remove timers when ready
-            self.__add_field_lines(field_lines)
+            self.__add_field_lines(field_lines, positives)
 
     def __add_field_lines(self,
-                          lines: np.ndarray) -> None:
-        for points in lines:
-            self.__add_field_line(points)
+                          lines: np.ndarray,
+                          positives: np.ndarray) -> None:
+
+        assert lines.shape[0] == positives.shape[0]
+
+        for i in range(lines.shape[0]):
+            points = lines[i]
+            positive = positives[i]
+            self.__add_field_line(points, positive)
 
     def __add_field_line(self,
-                         points: np.ndarray) -> None:
+                         points: np.ndarray,
+                         positive: bool) -> None:
 
         # If not enough points then don't draw anything
 
@@ -288,6 +298,7 @@ class Window(pyglet.window.Window):
         # Draw parts of line
 
         prev = points[0]
+        last_arrowhead_pos = prev/settings.VIEWPORT_SCALE_FAC  # N.B. not drawing arrohead at start
 
         for curr in points[1:]:
 
@@ -295,13 +306,37 @@ class Window(pyglet.window.Window):
             if np.all(np.isclose(prev, curr)):
                 break
 
+            x1 = prev[0]/settings.VIEWPORT_SCALE_FAC
+            y1 = prev[1]/settings.VIEWPORT_SCALE_FAC
+            x2 = curr[0]/settings.VIEWPORT_SCALE_FAC
+            y2 = curr[1]/settings.VIEWPORT_SCALE_FAC
+
             line = pyglet.shapes.Line(
-                prev[0]/settings.VIEWPORT_SCALE_FAC, prev[1]/settings.VIEWPORT_SCALE_FAC,
-                curr[0]/settings.VIEWPORT_SCALE_FAC, curr[1]/settings.VIEWPORT_SCALE_FAC,
+                x1, y1,
+                x2, y2,
                 batch=self.field_lines_batch
             )
-
             self.__field_shapes.add(line)
+
+            screen_pos = np.array([x2,y2])
+
+            if vectors.magnitudes(last_arrowhead_pos-screen_pos)[0] >= settings.field_line_render_arrowhead_spacing:
+
+                line_dir = (curr-prev) / vectors.magnitudes(curr-prev)[0] * (1 if positive else -1)
+                line_norm = np.array([line_dir[1], -line_dir[0]])
+                arrowhead_tip = screen_pos + (line_dir*ARROWHEAD_LENGTH)
+                arrowhead_side1 = screen_pos + (line_norm*ARROWHEAD_LENGTH/2)
+                arrowhead_side2 = screen_pos - (line_norm*ARROWHEAD_LENGTH/2)
+
+                arrowhead = pyglet.shapes.Triangle(
+                    arrowhead_tip[0], arrowhead_tip[1],
+                    arrowhead_side1[0], arrowhead_side1[1],
+                    arrowhead_side2[0], arrowhead_side2[1],
+                    batch=self.field_lines_batch
+                )
+                self.__field_shapes.add(arrowhead)
+
+                last_arrowhead_pos = screen_pos
 
             prev = curr
 
