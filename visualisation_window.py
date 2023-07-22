@@ -193,15 +193,18 @@ class _ChargePlaneRender(_FieldElementRenderBase):
 
     def point_in_draw_bounds(self, posx: int, posy: int) -> bool:
 
-        pos_arr = np.array([posx, posy])
+        pos_vec_screen = np.array([posx, posy])
+        pos_vec_world = pos_vec_screen*settings.VIEWPORT_SCALE_FAC
 
-        closest_plane_pos = vectors.plane_closest_point_to_point(
-            (self.cp.pos/settings.VIEWPORT_SCALE_FAC)[np.newaxis, :],
-            (self.cp.normal/settings.VIEWPORT_SCALE_FAC)[np.newaxis, :],
-            pos_arr[np.newaxis, :]
-        )
+        closest_plane_pos_world = vectors.plane_closest_point_to_point(
+            self.cp.pos[np.newaxis, :],
+            self.cp.normal[np.newaxis, :],
+            pos_vec_world[np.newaxis, :]
+        )[0]
 
-        sqr_dist = vectors.sqr_magnitudes(closest_plane_pos - pos_arr[np.newaxis, :])[0]
+        closest_plane_pos_screen = closest_plane_pos_world / settings.VIEWPORT_SCALE_FAC
+
+        sqr_dist = vectors.sqr_magnitudes(closest_plane_pos_screen - pos_vec_screen)[0]
 
         return sqr_dist <= _ChargePlaneRender.SQR_WIDTH
 
