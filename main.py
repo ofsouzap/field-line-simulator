@@ -1,10 +1,8 @@
 #!/bin/env python3
 
-from typing import Optional
+from typing import Optional, Callable
 from threading import Thread
 import numpy as np
-from field import Field
-from field_element import ElementBase
 from visualisation_window import create_window as create_visualisation_window
 from visualisation_window import Controller as VisualisationController
 from menu_windows import ControlsWindow, AddElementWindow
@@ -68,65 +66,72 @@ class ClickMode:
             controller.recalculate()
 
 
+class MainController:
+
+    def __init__(self):
+
+        # General setup
+
+        self.__click_mode = ClickMode()
+
+        # Create windows
+
+        self.visualisation_controller = create_visualisation_window(on_mouse_press=self._visualisation_clicked)
+
+        self.controls_window = ControlsWindow(
+            save_callback=self.save,
+            load_callback=self.load,
+            set_add_config_callback=self.set_click_mode_add,
+            delete_callback=self.set_click_mode_delete,
+            settings_callback=self.open_settings,
+            help_callback=self.show_help,
+            recalculate_callback=self.recalculate
+        )
+
+    def run(self):
+
+        # Create visualisation window thread
+
+        self._visualisation_thread = Thread(target=self.visualisation_controller.run_app)
+
+        # Run windows
+        # N.B. tkinter doesn't like not being on the main thread so I run it on the main thread
+
+        self._visualisation_thread.start()
+        self.controls_window.mainloop()
+
+        self._visualisation_thread.join()
+
+    def _visualisation_clicked(self, x, y, btn, mods):
+        self.__click_mode.on_click(x, y, self.visualisation_controller)
+
+    def save(self):
+        print("Save pressed")  # TODO - proper functionality
+
+    def load(self):
+        print("Load pressed")  # TODO - proper functionality
+
+    def set_click_mode_add(self, config: AddConfig):
+        self.visualisation_controller.set_click_mode_add()
+        self.__click_mode.set_mode_add(config)
+
+    def set_click_mode_delete(self):
+        self.visualisation_controller.set_click_mode_delete()
+        self.__click_mode.set_mode_delete()
+
+    def open_settings(self):
+        print("Settings pressed")  # TODO - proper functionality
+
+    def show_help(self):
+        print("Help pressed")  # TODO - proper functionality
+
+    def recalculate(self):
+        print("Recalculate pressed")  # TODO - proper functionality
+
+
 def main():
-
-    # General setup
-
-    click_mode = ClickMode()
-
-    # Action callbacks
-
-    def visualisation_clicked(x, y, btn, mods):
-        click_mode.on_click(x, y, visualisation_controller)
-
-    def save():
-        print("Save pressed")
-
-    def load():
-        print("Load pressed")
-
-    def set_click_mode_add(config: AddConfig):
-        visualisation_controller.set_click_mode_add()
-        click_mode.set_mode_add(config)
-
-    def set_click_mode_delete():
-        visualisation_controller.set_click_mode_delete()
-        click_mode.set_mode_delete()
-
-    def settings():
-        print("Settings pressed")
-
-    def help():
-        print("Help pressed")
-
-    def recalculate():
-        print("Recalculate pressed")
-
-    # Create windows
-
-    visualisation_controller = create_visualisation_window(on_mouse_press=visualisation_clicked)
-
-    controls_window = ControlsWindow(
-        save_callback=save,
-        load_callback=load,
-        set_add_config_callback=set_click_mode_add,
-        delete_callback=set_click_mode_delete,
-        settings_callback=settings,
-        help_callback=help,
-        recalculate_callback=recalculate
-    )
-
-    # Create visualisation window thread
-
-    visualisation_thread = Thread(target=visualisation_controller.run_app)
-
-    # Run windows
-    # N.B. tkinter doesn't like not being on the main thread so I run it on the main thread
-
-    visualisation_thread.start()
-    controls_window.mainloop()
-
-    visualisation_thread.join()
+    main_controller = MainController()
+    main_controller.run()
 
 
 if __name__ == "__main__":
