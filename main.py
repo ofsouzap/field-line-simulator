@@ -3,6 +3,7 @@
 from typing import Optional, Callable
 from threading import Thread
 import numpy as np
+from webbrowser import open as webbrowser_open
 from visualisation_window import create_window as create_visualisation_window
 from visualisation_window import Controller as VisualisationController
 from menu_windows import ControlsWindow, AddElementWindow
@@ -152,7 +153,7 @@ class MainController:
         print("Settings pressed")  # TODO - proper functionality
 
     def show_help(self):
-        print("Help pressed")  # TODO - proper functionality
+        webbrowser_open("https://github.com/ofsouzap/field-line-simulator/wiki/Instructions")
 
     def recalculate(self):
         self.visualisation_controller.recalculate()

@@ -1,6 +1,6 @@
 - fix division by 0 errors
-- write GitHub wiki page
-- help button functionality
+- add element config session persistence
 - settings persistence
+- fix closing the pyglet window
 ? allow displaying areas of high/low divergence and/or curl of the field
 - eventually, make 3D
