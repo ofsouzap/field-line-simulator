@@ -309,6 +309,9 @@ class AddElementWindow(tk.Toplevel, __CharKeyEventListener):
     STRENGTH_STEP = 1
     STRENGTH_MAX = 50
 
+    strength: float = 1
+    angle: float = 0
+
     class __Element(ABC):
 
         def load_icon(self) -> tk.PhotoImage:
@@ -378,10 +381,10 @@ class AddElementWindow(tk.Toplevel, __CharKeyEventListener):
         self.__elements_items: List[tk.Widget] = []
 
         self.__strength_var_raw = tk.DoubleVar(self)
-        self.__strength_var_raw.set(1)  # Default to 1
+        self.__strength_var_raw.set(AddElementWindow.strength)
 
         self.__angle_var_raw = tk.DoubleVar(self)
-        self.__angle_var_raw.set(0)  # Default to 0
+        self.__angle_var_raw.set(AddElementWindow.angle)
 
         # Create frames
 
@@ -428,6 +431,8 @@ class AddElementWindow(tk.Toplevel, __CharKeyEventListener):
             item.pack(side=tk.TOP)
 
     def __select_element(self, ele: __Element) -> None:
+
+        self.__refresh_static_var_vals()
 
         config = self.__create_config(ele.create_instance)
 
@@ -507,6 +512,11 @@ class AddElementWindow(tk.Toplevel, __CharKeyEventListener):
         )
 
         return config
+
+    def __refresh_static_var_vals(self) -> None:
+
+        AddElementWindow.strength = self.strength_config_val
+        AddElementWindow.angle = self.angle_config_val
 
 
 class SettingsWindow(tk.Toplevel, __CharKeyEventListener):
