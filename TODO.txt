@@ -1,7 +1,7 @@
 - fix division by 0 errors
-- add element config session persistence
 - settings persistence
 - fix closing the pyglet window
 - adding element preview
+- value input entries for sliders
 ? allow displaying areas of high/low divergence and/or curl of the field
 - eventually, make 3D
