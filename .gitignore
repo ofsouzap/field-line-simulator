@@ -181,5 +181,6 @@ cython_debug/
 
 # Custom ignore files
 
-# Field files
+# Ignore most field files except hand-made examples
 *.field
+!example_fields/*.field
