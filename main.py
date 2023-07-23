@@ -6,6 +6,7 @@ import numpy as np
 from visualisation_window import create_window as create_visualisation_window
 from visualisation_window import Controller as VisualisationController
 from menu_windows import ControlsWindow, AddElementWindow
+from field_file_windows import save_field, load_field
 from shortcuts import Shortcuts, MOD_CTRL, MOD_SHIFT, MOD_ALT
 import settings
 
@@ -124,10 +125,18 @@ class MainController:
         self.visualisation_controller.quit_app()
 
     def save(self):
-        print("Save pressed")  # TODO - proper functionality
+
+        field = self.visualisation_controller.get_field()
+        save_field(field)
 
     def load(self):
-        print("Load pressed")  # TODO - proper functionality
+
+        field = load_field()
+
+        if field is not None:
+
+            self.visualisation_controller.set_field(field)
+            self.recalculate()
 
     def set_click_mode_add(self, config: AddConfig):
         self.visualisation_controller.set_click_mode_add()
@@ -144,7 +153,7 @@ class MainController:
         print("Help pressed")  # TODO - proper functionality
 
     def recalculate(self):
-        print("Recalculate pressed")  # TODO - proper functionality
+        self.visualisation_controller.recalculate()
 
 
 def main():

@@ -1,16 +1,32 @@
-from typing import List, Tuple, Optional, Iterator
-from field_element import ElementBase
+from typing import List, Tuple, Optional, Iterator, TextIO
+from field_element import ElementBase, PointSource, ChargePlane
 import numpy as np
 import vectors
 import settings
+import re
+
 
 class ElementNotInFieldException(Exception): pass
+
 
 class Field:
 
     def __init__(self):
 
         self.__elements: List[ElementBase] = []
+
+    def write_to_file(self, stream: TextIO) -> None:
+
+        elements: List[ElementBase] = []
+
+        while stream.readable():
+
+            line = stream.readline()
+
+    @staticmethod
+    def read_from_stream(stream: TextIO) -> "Field":
+
+        raise NotImplementedError()  # TODO
 
     def add_element(self, ele: ElementBase) -> None:
         self.__elements.append(ele)
@@ -275,3 +291,139 @@ When a field line is ended early, the final value before clipping is propagated 
         # Return the output
 
         return lines
+
+
+class FieldSerialize:
+
+    POINT_SOURCE_REGEX = re.compile(
+        r"pointsource (?P<posx>-?\d+.?\d*) (?P<posy>-?\d+.?\d*) (?P<strength>-?\d+.?\d*)",
+        re.IGNORECASE
+    )
+
+    CHARGE_PLANE_REGEX = re.compile(
+        r"chargeplane (?P<posx>-?\d+.?\d*) (?P<posy>-?\d+.?\d*) (?P<strengthdensity>-?\d+.?\d*) (?P<normx>-?\d+.?\d*) (?P<normy>-?\d+.?\d*)",
+        re.IGNORECASE
+    )
+
+    @staticmethod
+    def serialize(field: Field, stream: TextIO) -> None:
+        for ele in field.iter_elements():
+            FieldSerialize.write_element(stream, ele)
+
+    @staticmethod
+    def deserialize(stream: TextIO) -> Field:
+
+        eles: List[ElementBase] = []
+
+        # Read elements from stream
+
+        while True:#stream.readable():
+
+            line = stream.readline()
+
+            # Final line is blank without newline
+            if len(line) == 0:
+                break
+
+            # Strip whitespace
+            line = line.strip()
+
+            # Blank lines
+            if len(line) == 0:
+                continue
+
+            # Comment lines
+            if line[0] == "#":
+                continue
+
+            # Regular lines
+            try:
+                ele = FieldSerialize.parse_element(line)
+                eles.append(ele)
+            except ValueError:
+                print(f"Encountered invalid line when reading file:\n{line}")
+
+        # Create field from elements
+
+        field = Field()
+
+        for ele in eles:
+            field.add_element(ele)
+
+        # Return output
+
+        return field
+
+    @staticmethod
+    def write_element(stream: TextIO, ele: ElementBase) -> None:
+        match ele:
+            case PointSource():
+                FieldSerialize.write_point_source(stream, ele)
+            case ChargePlane():
+                FieldSerialize.write_charge_plane(stream, ele)
+            case _:
+                raise ValueError("Unhandled element subclass")
+
+    @staticmethod
+    def write_point_source(stream: TextIO, ps: PointSource) -> None:
+        stream.write(f"pointsource {ps.x:.3f} {ps.y:.3f} {ps.strength:.3f}\n")
+
+    @staticmethod
+    def write_charge_plane(stream: TextIO, cp: ChargePlane) -> None:
+        stream.write(f"chargeplane {cp.x:.3f} {cp.y:.3f} {cp.strength_density:.3f} {cp.normal[0]:.3f} {cp.normal[1]:.3f}")
+
+    @staticmethod
+    def parse_element(s: str) -> ElementBase:
+
+        ps = FieldSerialize.try_parse_point_source(s)
+        if ps is not None:
+            return ps
+
+        cp = FieldSerialize.try_parse_charge_plane(s)
+        if cp is not None:
+            return cp
+
+        raise ValueError("Invalid input")
+
+    @staticmethod
+    def try_parse_point_source(s: str) -> Optional[PointSource]:
+
+        m = FieldSerialize.POINT_SOURCE_REGEX.fullmatch(s)
+
+        if m is None:
+
+            return None
+
+        else:
+
+            posx = float(m.group("posx"))
+            posy = float(m.group("posy"))
+            strength = float(m.group("strength"))
+
+            pos = np.array([posx, posy], dtype=float)
+            ps = PointSource(pos, strength)
+
+            return ps
+
+    @staticmethod
+    def try_parse_charge_plane(s: str) -> Optional[ChargePlane]:
+
+        m = FieldSerialize.CHARGE_PLANE_REGEX.fullmatch(s)
+
+        if m is None:
+
+            return None
+
+        else:
+
+            posx = float(m.group("posx"))
+            posy = float(m.group("posy"))
+            strengthdensity = float(m.group("strengthdensity"))
+            normx = float(m.group("normx"))
+            normy = float(m.group("normy"))
+
+            pos = np.array([posx, posy], dtype=float)
+            norm = np.array([normx, normy], dtype=float)
+            cp = ChargePlane(pos, norm, strengthdensity)
+
+            return cp

@@ -277,6 +277,8 @@ class Window(pyglet.window.Window):
                             field: Field) -> None:
         """Draws the field elements of a field without drawing the field lines"""
 
+        self.switch_to()
+
         for ele in field.iter_elements():
 
             shapes: Set = _create_element_renderer(ele).draw(self.clip_bounds, self.field_elements_batch)
@@ -333,6 +335,8 @@ class Window(pyglet.window.Window):
     def __add_field_line(self,
                          points: np.ndarray,
                          positive: bool) -> None:
+
+        self.switch_to()
 
         # If not enough points then don't draw anything
 
@@ -399,6 +403,8 @@ class Window(pyglet.window.Window):
 
         self.clear()
 
+        self.switch_to()
+
         self.field_lines_batch.draw()
 
         self.field_elements_batch.draw()
@@ -448,6 +454,12 @@ class Controller:
             self.__field = field
         else:
             self.__field = Field()
+
+    def get_field(self) -> Field:
+        return self.__field
+
+    def set_field(self, field: Field) -> None:
+        self.__field = field
 
     def recalculate(self) -> None:
 

@@ -243,33 +243,45 @@ class ControlsWindow(tk.Tk, __CharKeyEventListener):
 
         return button
 
+    def __create_add_elements_window(self) -> "AddElementWindow":
+        return AddElementWindow(
+            self,
+            on_char_press=self.__on_char_press,
+            select_callback=self.__set_add_config_callback,
+            destroy_callback=self.__clear_add_element_window
+        )
+
     def open_add_elements_window(self) -> None:
 
-        if self.__add_element_window is None:
-            self.__add_element_window = AddElementWindow(
-                self,
-                on_char_press=self.__on_char_press,
-                select_callback=self.__set_add_config_callback,
-                destroy_callback=self.__clear_add_element_window
-            )
+        if self.__add_element_window is not None:
+            try:
+                self.__add_element_window.lift()
+                self.__add_element_window.focus_set()
+            except:
+                self.__add_element_window = self.__create_add_elements_window()
         else:
-            self.__add_element_window.lift()
-            self.__add_element_window.focus_set()
+            self.__add_element_window = self.__create_add_elements_window()
 
     def __clear_add_element_window(self) -> None:
         self.__add_element_window = None
 
+    def __create_settings_window(self) -> "SettingsWindow":
+        return SettingsWindow(
+            self,
+            on_char_press=self.__on_char_press,
+            destroy_callback=self.__clear_settings_window
+        )
+
     def open_settings_window(self) -> None:
 
-        if self.__settings_window is None:
-            self.__settings_window = SettingsWindow(
-                self,
-                on_char_press=self.__on_char_press,
-                destroy_callback=self.__clear_settings_window
-            )
+        if self.__settings_window is not None:
+            try:
+                self.__settings_window.lift()
+                self.__settings_window.focus_set()
+            except tk.TclError:
+                self.__settings_window = self.__create_settings_window()
         else:
-            self.__settings_window.lift()
-            self.__settings_window.focus_set()
+            self.__settings_window = self.__create_settings_window()
 
     def __clear_settings_window(self) -> None:
         self.__settings_window = None
