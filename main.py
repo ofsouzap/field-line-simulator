@@ -76,9 +76,10 @@ class MainController:
 
         # Create windows
 
-        self.visualisation_controller = create_visualisation_window(on_mouse_press=self._visualisation_clicked)
+        self.visualisation_controller = create_visualisation_window(on_exit=self.quit, on_mouse_press=self._visualisation_clicked)
 
         self.controls_window = ControlsWindow(
+            on_exit=self.quit,
             save_callback=self.save,
             load_callback=self.load,
             set_add_config_callback=self.set_click_mode_add,
@@ -90,7 +91,7 @@ class MainController:
 
         # Create visualisation window thread
 
-        self._visualisation_thread = Thread(target=self.visualisation_controller.run_app)
+        self._visualisation_thread = Thread(target=lambda: self.visualisation_controller.run_app())
 
         # Run windows
         # N.B. tkinter doesn't like not being on the main thread so I run it on the main thread
@@ -102,6 +103,10 @@ class MainController:
 
     def _visualisation_clicked(self, x, y, btn, mods):
         self.__click_mode.on_click(x, y, self.visualisation_controller)
+
+    def quit(self):
+        self.controls_window.try_exit()
+        self.visualisation_controller.quit_app()
 
     def save(self):
         print("Save pressed")  # TODO - proper functionality

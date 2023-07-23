@@ -41,6 +41,7 @@ BLUE = (0, 0, 255, 255)
 
 
 class AppAlreadyRunningException(Exception): pass
+class AppNotRunningException(Exception): pass
 
 
 class _FieldElementRenderBase(ABC):
@@ -228,11 +229,14 @@ class Window(pyglet.window.Window):
     def __init__(self,
                  width: int,
                  height: int,
-                 on_mouse_press: Callable[[int, int, int, int], None],):
+                 on_exit: Callable[[], None],
+                 on_mouse_press: Callable[[int, int, int, int], None]):
 
         super().__init__(width, height, WINDOW_TITLE)
 
         self.__lifetime = 0
+
+        self.__on_exit = on_exit
 
         self.field_lines_batch = pyglet.graphics.Batch()
         self.field_elements_batch = pyglet.graphics.Batch()
@@ -243,6 +247,10 @@ class Window(pyglet.window.Window):
         self.__click_mode_sprite: Optional[pyglet.sprite.Sprite] = None
 
         self.mouse_press_callback = on_mouse_press
+
+    def on_close(self):
+        super().on_close()
+        self.__on_exit()
 
     @property
     def clip_bounds(self) -> np.ndarray:
@@ -405,7 +413,7 @@ class Window(pyglet.window.Window):
 class Controller:
     """A wrapper for a visualisation window for controlling the window"""
 
-    app_running: bool = False
+    event_loop: Optional[pyglet.app.EventLoop] = None
 
     def __init__(self,
                  window: Window,
@@ -462,22 +470,38 @@ Only should be called when all windows have been created and can't be called aga
 Will block until all windows are closed.
 """
 
-        if Controller.app_running:
+        if Controller.event_loop is not None:
 
             raise AppAlreadyRunningException()
 
         else:
 
-            pyglet.app.run()
+            Controller.event_loop = pyglet.app.EventLoop()
+
+            Controller.event_loop.run()
+
+    @staticmethod
+    def quit_app() -> None:
+
+        if Controller.event_loop is None:
+
+            raise AppNotRunningException()
+
+        else:
+
+            Controller.event_loop.has_exit = True
 
 
 def create_window(
+        on_exit: Callable[[], None],
         on_mouse_press: Callable[[int, int, int, int], None]
     ) -> Controller:
     """Create and open the visualisation window.
 Note that this doesn't start the window running
 
 Parameters:
+
+    on_exit - a callable run when the window is closed
 
     on_mouse_press - a callable run when the window is clicked on with the mouse. \
 The inputs to the callable are the same as those for pyglet.Window.on_mouse_press (x, y, button, modifiers)
@@ -487,7 +511,7 @@ Returns:
     controller - a controller object for the window
 """
 
-    window = Window(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT, on_mouse_press)  # Create main window
+    window = Window(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT, on_exit=on_exit, on_mouse_press=on_mouse_press)  # Create main window
     controller = Controller(window)  # Create window's controller
 
     # Schedule window's update function
@@ -501,5 +525,5 @@ Returns:
 
 if __name__ == "__main__":
 
-    controller = create_window(lambda x, y, btn, mods: print(f"Click at {x}, {y} with button {btn}"))
+    controller = create_window(on_exit=lambda: None, on_mouse_press=lambda x, y, btn, mods: print(f"Click at {x}, {y} with button {btn}"))
     controller.run_app()

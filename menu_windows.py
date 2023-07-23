@@ -122,6 +122,7 @@ class ControlsWindow(tk.Tk):
     RECALCULATE_BTN_IMG = joinpath("controls_icons", "placeholder.png")
 
     def __init__(self,
+                 on_exit: Callable[[], None],
                  save_callback: Callable[[], None],
                  load_callback: Callable[[], None],
                  set_add_config_callback: Callable[["AddElementWindow.Config"], None],
@@ -133,6 +134,11 @@ class ControlsWindow(tk.Tk):
         # Setup
 
         self.title(ControlsWindow.WINDOW_TITLE)
+
+        self.__is_open: bool = True
+
+        self.destroy_callback = on_exit
+        self.protocol("WM_DELETE_WINDOW", lambda: self.__try_exit())  # If user manually tries to close the window
 
         self.__add_element_window: Optional[AddElementWindow] = None
         self.__settings_window: Optional[SettingsWindow] = None
@@ -160,6 +166,17 @@ class ControlsWindow(tk.Tk):
         self.__place_button(self.__create_button("Help", help_callback, _load_res_image(ControlsWindow.HELP_BTN_IMG)),
                             2, 1
         )
+
+    def __try_exit(self) -> None:
+
+        if self.__is_open:
+
+            self.__is_open = False
+            self.destroy_callback()
+            self.destroy()
+
+    def try_exit(self) -> None:
+        self.__try_exit()
 
     def __create_button(self,
                         text: str,
