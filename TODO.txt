@@ -1,5 +1,4 @@
 - fix division by 0 errors
-- recalculate button
 - fix closing the pyglet window
 - adding element preview
 - value input entries for sliders

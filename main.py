@@ -93,7 +93,8 @@ class MainController:
             load_callback=self.load,
             set_add_config_callback=self.set_click_mode_add,
             delete_callback=self.set_click_mode_delete,
-            help_callback=self.show_help
+            help_callback=self.show_help,
+            recalculate_callback=self.recalculate
         )
 
         # Set up shortcuts
@@ -103,6 +104,7 @@ class MainController:
         self.__shortcuts.add_shortcut("A", self.controls_window.open_add_elements_window)
         self.__shortcuts.add_shortcut("X", self.set_click_mode_delete)
         self.__shortcuts.add_shortcut("S", self.controls_window.open_settings_window)
+        self.__shortcuts.add_shortcut("R", self.recalculate)
 
     def run(self):
 

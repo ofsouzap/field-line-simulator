@@ -173,7 +173,8 @@ class ControlsWindow(tk.Tk, __CharKeyEventListener):
                  load_callback: Callable[[], None],
                  set_add_config_callback: Callable[["AddElementWindow.Config"], None],
                  delete_callback: Callable[[], None],
-                 help_callback: Callable[[], None]):
+                 help_callback: Callable[[], None],
+                 recalculate_callback: Callable[[], None]):
 
         super().__init__()
 
@@ -214,6 +215,9 @@ class ControlsWindow(tk.Tk, __CharKeyEventListener):
         )
         self.__place_button(self.__create_button("Help", help_callback, _load_res_image(ControlsWindow.HELP_BTN_IMG)),
                             2, 1
+        )
+        self.__place_button(self.__create_button("Recalculate (R)", recalculate_callback, _load_res_image(ControlsWindow.RECALCULATE_BTN_IMG)),
+                            2, 2
         )
 
     def _handle_char_pressed(self, cmd: KeyPressCommand) -> None:
