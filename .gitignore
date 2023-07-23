@@ -184,3 +184,7 @@ cython_debug/
 # Ignore most field files except hand-made examples
 *.field
 !example_fields/*.field
+
+# Ignore settings file
+settings.conf
+*/settings.conf

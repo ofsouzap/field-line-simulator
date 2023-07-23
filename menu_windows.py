@@ -269,7 +269,7 @@ class ControlsWindow(tk.Tk, __CharKeyEventListener):
         return SettingsWindow(
             self,
             on_char_press=self.__on_char_press,
-            destroy_callback=self.__clear_settings_window
+            destroy_callback=self.__settings_window_destroy_callback
         )
 
     def open_settings_window(self) -> None:
@@ -285,6 +285,10 @@ class ControlsWindow(tk.Tk, __CharKeyEventListener):
 
     def __clear_settings_window(self) -> None:
         self.__settings_window = None
+
+    def __settings_window_destroy_callback(self) -> None:
+        self.__clear_settings_window()
+        settings.save_settings()
 
     def __place_button(self,
                        button: tk.Widget,
@@ -604,18 +608,23 @@ class SettingsWindow(tk.Toplevel, __CharKeyEventListener):
 
     def __update_show_field_lines(self):
         settings.show_field_line_arrows = self.show_field_lines.get()
+        settings.save_settings()
 
     def __update_line_count_factor(self):
         settings.field_line_count_factor = self.line_count_factor.get()
+        settings.save_settings()
 
     def __update_simulation_step_distance(self):
         settings.field_line_trace_step_distance_screen_space = self.simulation_step_distance.get()
+        settings.save_settings()
 
     def __update_maximum_line_steps(self):
         settings.field_line_trace_max_step_count = self.maximum_line_steps.get()
+        settings.save_settings()
 
     def __update_element_stop_distance(self):
         settings.field_line_trace_element_stop_distance_screen_space = self.element_stop_distance.get()
+        settings.save_settings()
 
     def __create_bool_setting(self,
                               name: str,

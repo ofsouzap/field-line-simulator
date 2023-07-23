@@ -160,6 +160,7 @@ class MainController:
 
 
 def main():
+    settings.load_settings()
     main_controller = MainController()
     main_controller.run()
 

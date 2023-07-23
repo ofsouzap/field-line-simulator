@@ -34,6 +34,16 @@ __char_keys: Dict[str, int] = {
     "X": Key.X,
     "Y": Key.Y,
     "Z": Key.Z,
+    "0": Key.NUM_0,
+    "1": Key.NUM_1,
+    "2": Key.NUM_2,
+    "3": Key.NUM_3,
+    "4": Key.NUM_4,
+    "5": Key.NUM_5,
+    "6": Key.NUM_6,
+    "7": Key.NUM_7,
+    "8": Key.NUM_8,
+    "9": Key.NUM_9,
 }
 
 
