@@ -83,9 +83,7 @@ class MainController:
             load_callback=self.load,
             set_add_config_callback=self.set_click_mode_add,
             delete_callback=self.set_click_mode_delete,
-            settings_callback=self.open_settings,
-            help_callback=self.show_help,
-            recalculate_callback=self.recalculate
+            help_callback=self.show_help
         )
 
     def run(self):

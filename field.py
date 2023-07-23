@@ -225,10 +225,10 @@ When a field line is ended early, the final value before clipping is propagated 
         assert starts.shape[0] == positives.shape[0], "Starting point and positives arrays are not of matching shapes"
 
         if step_distance is None:
-            step_distance = settings.field_line_trace_step_distance
+            step_distance = settings.field_line_trace_step_distance_screen_space * settings.VIEWPORT_SCALE_FAC
 
         if element_stop_distance is None:
-            element_stop_distance = settings.field_line_trace_element_stop_distance
+            element_stop_distance = settings.field_line_trace_element_stop_distance_screen_space * settings.VIEWPORT_SCALE_FAC
 
         if clip_ranges is not None:
             assert clip_ranges.ndim == 2, "Invalid clip_ranges dimensionality"

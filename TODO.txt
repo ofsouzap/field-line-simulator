@@ -1,6 +1,5 @@
 - fix division by 0 errors
-- fix charge plane render click detection
-- settings window
+- stop app on close either window
 - shortcuts
 - allow saving and loading fields (stored as collections of field elements)
 - allow displaying areas of high/low divergence and/or curl of the field

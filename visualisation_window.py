@@ -282,7 +282,7 @@ class Window(pyglet.window.Window):
 
         for ele in field.iter_elements():
 
-            starts, pos = ele.get_field_line_starts(self.clip_bounds, fac=8)
+            starts, pos = ele.get_field_line_starts(self.clip_bounds, fac=settings.field_line_count_factor)
             line_starts_list.append(starts)
             postives_list.append(pos)
 
@@ -297,7 +297,7 @@ class Window(pyglet.window.Window):
         with Timer("Trace Lines"):  # TODO - remove timers when ready
             field_lines = field.trace_field_lines(
                 line_starts,
-                500,
+                settings.field_line_trace_max_step_count,
                 positives,
                 clip_ranges=self.clip_bounds
             )
@@ -352,23 +352,25 @@ class Window(pyglet.window.Window):
 
             screen_pos = np.array([x2,y2])
 
-            if vectors.magnitudes(last_arrowhead_pos-screen_pos)[0] >= settings.field_line_render_arrowhead_spacing:
+            if settings.show_field_line_arrows:
 
-                line_dir = (curr-prev) / vectors.magnitudes(curr-prev)[0] * (1 if positive else -1)
-                line_norm = np.array([line_dir[1], -line_dir[0]])
-                arrowhead_tip = screen_pos + (line_dir*ARROWHEAD_LENGTH)
-                arrowhead_side1 = screen_pos + (line_norm*ARROWHEAD_LENGTH/2)
-                arrowhead_side2 = screen_pos - (line_norm*ARROWHEAD_LENGTH/2)
+                if vectors.magnitudes(last_arrowhead_pos-screen_pos)[0] >= settings.field_line_render_arrowhead_spacing:
 
-                arrowhead = pyglet.shapes.Triangle(
-                    arrowhead_tip[0], arrowhead_tip[1],
-                    arrowhead_side1[0], arrowhead_side1[1],
-                    arrowhead_side2[0], arrowhead_side2[1],
-                    batch=self.field_lines_batch
-                )
-                self.__field_shapes.add(arrowhead)
+                    line_dir = (curr-prev) / vectors.magnitudes(curr-prev)[0] * (1 if positive else -1)
+                    line_norm = np.array([line_dir[1], -line_dir[0]])
+                    arrowhead_tip = screen_pos + (line_dir*ARROWHEAD_LENGTH)
+                    arrowhead_side1 = screen_pos + (line_norm*ARROWHEAD_LENGTH/2)
+                    arrowhead_side2 = screen_pos - (line_norm*ARROWHEAD_LENGTH/2)
 
-                last_arrowhead_pos = screen_pos
+                    arrowhead = pyglet.shapes.Triangle(
+                        arrowhead_tip[0], arrowhead_tip[1],
+                        arrowhead_side1[0], arrowhead_side1[1],
+                        arrowhead_side2[0], arrowhead_side2[1],
+                        batch=self.field_lines_batch
+                    )
+                    self.__field_shapes.add(arrowhead)
+
+                    last_arrowhead_pos = screen_pos
 
             prev = curr
 
