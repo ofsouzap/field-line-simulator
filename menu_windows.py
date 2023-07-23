@@ -6,7 +6,17 @@ from os.path import join as joinpath
 from field_element import ElementBase, PointSource, ChargePlane
 import vectors
 import settings
+from shortcuts import RawCommand as KeyPressCommand
+from shortcuts import MOD_CTRL, MOD_SHIFT, MOD_ALT
 import numpy as np
+
+
+# The Tk codes for the modifier keys.
+#     Source: https://anzeljg.github.io/rin2/book2/2405/docs/tkinter/event-handlers.html
+TK_SHIFT = 0x0001
+TK_CTRL = 0x0004
+TK_LALT = 0x0008
+TK_RALT = 0x0080
 
 
 def _resource(*path: str) -> str:
@@ -109,7 +119,42 @@ def _create_int_slider(master,
     return frame
 
 
-class ControlsWindow(tk.Tk):
+class __CharKeyEventListener(ABC):
+
+    def _on_key_press(self, event: tk.Event) -> None:
+
+        # Check is character
+
+        if event.keysym and (len(event.keysym) == 1):
+            c = event.keysym
+        else:
+            return
+
+        # Modifiers
+
+        mods = 0
+
+        assert isinstance(event.state, int), "Help :("
+
+        if event.state & TK_SHIFT:
+            mods |= MOD_SHIFT
+
+        if event.state & TK_CTRL:
+            mods |= MOD_CTRL
+
+        if (event.state & TK_LALT) or (event.state & TK_RALT):
+            mods |= MOD_ALT
+
+        # Call handler
+
+        self._handle_char_pressed((c, mods))
+
+    @abstractmethod
+    def _handle_char_pressed(self, cmd: KeyPressCommand) -> None:
+        pass
+
+
+class ControlsWindow(tk.Tk, __CharKeyEventListener):
 
     WINDOW_TITLE = "Fields - Controls"
 
@@ -123,6 +168,7 @@ class ControlsWindow(tk.Tk):
 
     def __init__(self,
                  on_exit: Callable[[], None],
+                 on_char_press: Callable[[KeyPressCommand], None],
                  save_callback: Callable[[], None],
                  load_callback: Callable[[], None],
                  set_add_config_callback: Callable[["AddElementWindow.Config"], None],
@@ -134,6 +180,9 @@ class ControlsWindow(tk.Tk):
         # Setup
 
         self.title(ControlsWindow.WINDOW_TITLE)
+
+        self.__on_char_press = on_char_press
+        self.bind("<Key>", self._on_key_press)
 
         self.__is_open: bool = True
 
@@ -154,18 +203,21 @@ class ControlsWindow(tk.Tk):
         self.__place_button(self.__create_button("Open (Ctrl+O)", load_callback, _load_res_image(ControlsWindow.LOAD_BTN_IMG)),
                             0, 1
         )
-        self.__place_button(self.__create_button("Add (A)", self.__open_add_elements_window, _load_res_image(ControlsWindow.ADD_BTN_IMG)),
+        self.__place_button(self.__create_button("Add (A)", self.open_add_elements_window, _load_res_image(ControlsWindow.ADD_BTN_IMG)),
                             1, 0
         )
         self.__place_button(self.__create_button("Delete (X)", delete_callback, _load_res_image(ControlsWindow.DELETE_BTN_IMG)),
                             1, 1
         )
-        self.__place_button(self.__create_button("Settings (S)", self.__open_settings_window, _load_res_image(ControlsWindow.SETTINGS_BTN_IMG)),
+        self.__place_button(self.__create_button("Settings (S)", self.open_settings_window, _load_res_image(ControlsWindow.SETTINGS_BTN_IMG)),
                             2, 0
         )
         self.__place_button(self.__create_button("Help", help_callback, _load_res_image(ControlsWindow.HELP_BTN_IMG)),
                             2, 1
         )
+
+    def _handle_char_pressed(self, cmd: KeyPressCommand) -> None:
+        self.__on_char_press(cmd)
 
     def __try_exit(self) -> None:
 
@@ -191,11 +243,12 @@ class ControlsWindow(tk.Tk):
 
         return button
 
-    def __open_add_elements_window(self) -> None:
+    def open_add_elements_window(self) -> None:
 
         if self.__add_element_window is None:
             self.__add_element_window = AddElementWindow(
                 self,
+                on_char_press=self.__on_char_press,
                 select_callback=self.__set_add_config_callback,
                 destroy_callback=self.__clear_add_element_window
             )
@@ -206,11 +259,12 @@ class ControlsWindow(tk.Tk):
     def __clear_add_element_window(self) -> None:
         self.__add_element_window = None
 
-    def __open_settings_window(self) -> None:
+    def open_settings_window(self) -> None:
 
         if self.__settings_window is None:
             self.__settings_window = SettingsWindow(
                 self,
+                on_char_press=self.__on_char_press,
                 destroy_callback=self.__clear_settings_window
             )
         else:
@@ -233,7 +287,7 @@ class ControlsWindow(tk.Tk):
         )
 
 
-class AddElementWindow(tk.Toplevel):
+class AddElementWindow(tk.Toplevel, __CharKeyEventListener):
 
     WINDOW_TITLE = "Fields - Add Element"
 
@@ -292,6 +346,7 @@ class AddElementWindow(tk.Toplevel):
 
     def __init__(self,
                  master,
+                 on_char_press: Callable[[KeyPressCommand], None],
                  select_callback: Callable[[Config], None],
                  destroy_callback: Callable[[], None]):
 
@@ -300,6 +355,9 @@ class AddElementWindow(tk.Toplevel):
         # Setup
 
         self.title(AddElementWindow.WINDOW_TITLE)
+
+        self.__on_char_press = on_char_press
+        self.bind("<Key>", self._on_key_press)
 
         self.select_callback = select_callback
         self.destroy_callback = destroy_callback
@@ -330,6 +388,9 @@ class AddElementWindow(tk.Toplevel):
 
         self.elements_frame.pack(side=tk.LEFT, padx=15, pady=15)
         self.config_frame.pack(side=tk.RIGHT, padx=15, pady=15)
+
+    def _handle_char_pressed(self, cmd: KeyPressCommand) -> None:
+        self.__on_char_press(cmd)
 
     @property
     def strength_config_val(self) -> float:
@@ -436,16 +497,20 @@ class AddElementWindow(tk.Toplevel):
         return config
 
 
-class SettingsWindow(tk.Toplevel):
+class SettingsWindow(tk.Toplevel, __CharKeyEventListener):
 
     def __init__(self,
                  master,
+                 on_char_press: Callable[[KeyPressCommand], None],
                  destroy_callback: Callable[[], None]):
 
         super().__init__(master, takefocus=True)
 
         self.double_vcmd = self.register(self.__double_callback)
         self.int_vcmd = self.register(self.__int_callback)
+
+        self.__on_char_press = on_char_press
+        self.bind("<Key>", self._on_key_press)
 
         self.destroy_callback = destroy_callback
         self.protocol("WM_DELETE_WINDOW", lambda: self.destroy_callback == self.destroy())  # If user manually tries to close the window
@@ -497,6 +562,9 @@ class SettingsWindow(tk.Toplevel):
             end=10.0,
             resolution=0.5
         )
+
+    def _handle_char_pressed(self, cmd) -> None:
+        self.__on_char_press(cmd)
 
     def __int_callback(self, P):
         try:

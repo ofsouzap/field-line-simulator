@@ -6,6 +6,7 @@ import numpy as np
 from visualisation_window import create_window as create_visualisation_window
 from visualisation_window import Controller as VisualisationController
 from menu_windows import ControlsWindow, AddElementWindow
+from shortcuts import Shortcuts, MOD_CTRL, MOD_SHIFT, MOD_ALT
 import settings
 
 
@@ -73,19 +74,33 @@ class MainController:
         # General setup
 
         self.__click_mode = ClickMode()
+        self.__shortcuts = Shortcuts()
 
         # Create windows
 
-        self.visualisation_controller = create_visualisation_window(on_exit=self.quit, on_mouse_press=self._visualisation_clicked)
+        self.visualisation_controller = create_visualisation_window(
+            on_exit=self.quit,
+            on_mouse_press=self._visualisation_clicked,
+            on_key_press=self.__shortcuts.use_shortcuts
+        )
 
         self.controls_window = ControlsWindow(
             on_exit=self.quit,
+            on_char_press=lambda cmd: self.__shortcuts.use_shortcuts(cmd),
             save_callback=self.save,
             load_callback=self.load,
             set_add_config_callback=self.set_click_mode_add,
             delete_callback=self.set_click_mode_delete,
             help_callback=self.show_help
         )
+
+        # Set up shortcuts
+
+        self.__shortcuts.add_shortcut(("S", MOD_CTRL), self.save)
+        self.__shortcuts.add_shortcut(("O", MOD_CTRL), self.load)
+        self.__shortcuts.add_shortcut("A", self.controls_window.open_add_elements_window)
+        self.__shortcuts.add_shortcut("X", self.set_click_mode_delete)
+        self.__shortcuts.add_shortcut("S", self.controls_window.open_settings_window)
 
     def run(self):
 

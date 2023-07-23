@@ -6,6 +6,8 @@ import vectors
 from field import Field
 from field_element import ElementBase, PointSource, ChargePlane
 import settings
+from shortcuts import RawCommand as KeyPressCommand
+from shortcuts import MOD_SHIFT, MOD_CTRL, MOD_ALT
 import numpy as np
 from _debug_util import Timer
 
@@ -230,7 +232,8 @@ class Window(pyglet.window.Window):
                  width: int,
                  height: int,
                  on_exit: Callable[[], None],
-                 on_mouse_press: Callable[[int, int, int, int], None]):
+                 on_mouse_press: Callable[[int, int, int, int], None],
+                 on_key_press: Callable[[KeyPressCommand], None]):
 
         super().__init__(width, height, WINDOW_TITLE)
 
@@ -247,6 +250,7 @@ class Window(pyglet.window.Window):
         self.__click_mode_sprite: Optional[pyglet.sprite.Sprite] = None
 
         self.mouse_press_callback = on_mouse_press
+        self.key_press_callback = on_key_press
 
     def on_close(self):
         super().on_close()
@@ -409,6 +413,25 @@ class Window(pyglet.window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         self.mouse_press_callback(x, y, button, modifiers)
 
+    def on_key_release(self, c, all_mods):
+
+        # Only want to read the modifiers that might be part of a shortcut
+
+        mods = 0
+
+        if all_mods & pyglet.window.key.MOD_SHIFT:
+            mods |= MOD_SHIFT
+
+        if all_mods & pyglet.window.key.MOD_CTRL:
+            mods |= MOD_CTRL
+
+        if all_mods & pyglet.window.key.MOD_ALT:
+            mods |= MOD_ALT
+
+        # Run callback
+
+        self.key_press_callback((c, mods))
+
 
 class Controller:
     """A wrapper for a visualisation window for controlling the window"""
@@ -494,7 +517,8 @@ Will block until all windows are closed.
 
 def create_window(
         on_exit: Callable[[], None],
-        on_mouse_press: Callable[[int, int, int, int], None]
+        on_mouse_press: Callable[[int, int, int, int], None],
+        on_key_press: Callable[[KeyPressCommand], None]
     ) -> Controller:
     """Create and open the visualisation window.
 Note that this doesn't start the window running
@@ -506,12 +530,22 @@ Parameters:
     on_mouse_press - a callable run when the window is clicked on with the mouse. \
 The inputs to the callable are the same as those for pyglet.Window.on_mouse_press (x, y, button, modifiers)
 
+    on_key_press - a callable run when a key is pressed with the window in focus
+
 Returns:
 
     controller - a controller object for the window
 """
 
-    window = Window(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT, on_exit=on_exit, on_mouse_press=on_mouse_press)  # Create main window
+    # Create main window
+    window = Window(
+        WINDOW_DEFAULT_WIDTH,
+        WINDOW_DEFAULT_HEIGHT,
+        on_exit=on_exit,
+        on_mouse_press=on_mouse_press,
+        on_key_press=on_key_press
+    )
+
     controller = Controller(window)  # Create window's controller
 
     # Schedule window's update function
@@ -525,5 +559,9 @@ Returns:
 
 if __name__ == "__main__":
 
-    controller = create_window(on_exit=lambda: None, on_mouse_press=lambda x, y, btn, mods: print(f"Click at {x}, {y} with button {btn}"))
+    controller = create_window(
+        on_exit=lambda: None,
+        on_mouse_press=lambda x, y, btn, mods: print(f"Click at {x}, {y} with button {btn}"),
+        on_key_press=lambda cmd: print(f"Command {cmd} pressed")
+    )
     controller.run_app()
