@@ -242,8 +242,9 @@ class Window(pyglet.window.Window):
         self.__on_exit = on_exit
 
         self.field_lines_batch = pyglet.graphics.Batch()
+        self.__field_lines_shapes: Set = set()
         self.field_elements_batch = pyglet.graphics.Batch()
-        self.__field_shapes: Set = set()
+        self.__field_elements_shapes: Set = set()
 
         self.add_mode_sprite = pyglet.sprite.Sprite(status_icon_add, x=STATUS_ICON_POSITION[0], y=STATUS_ICON_POSITION[1])
         self.delete_mode_sprite = pyglet.sprite.Sprite(status_icon_delete, x=STATUS_ICON_POSITION[0], y=STATUS_ICON_POSITION[1])
@@ -273,21 +274,38 @@ class Window(pyglet.window.Window):
     def set_click_mode_delete(self) -> None:
         self.__click_mode_sprite = self.delete_mode_sprite
 
+    def __clear_field_element_shapes(self) -> None:
+
+        for shape in self.__field_elements_shapes:
+            shape.delete()
+
+        self.__field_elements_shapes.clear()
+
     def draw_field_elements(self,
                             field: Field) -> None:
         """Draws the field elements of a field without drawing the field lines"""
 
-        self.switch_to()
+        self.__clear_field_element_shapes()
 
         for ele in field.iter_elements():
 
+            self.switch_to()
             shapes: Set = _create_element_renderer(ele).draw(self.clip_bounds, self.field_elements_batch)
 
-            self.__field_shapes |= shapes
+            self.__field_elements_shapes |= shapes
+
+    def __clear_field_lines_shapes(self) -> None:
+
+        for shape in self.__field_lines_shapes:
+            shape.delete()
+
+        self.__field_lines_shapes.clear()
 
     def draw_field_lines(self,
                          field: Field) -> None:
         """Draws the field lines of a field without drawing the field elements"""
+
+        self.__clear_field_lines_shapes()
 
         # Generate field line generation data
 
@@ -364,7 +382,7 @@ class Window(pyglet.window.Window):
                 x2, y2,
                 batch=self.field_lines_batch
             )
-            self.__field_shapes.add(line)
+            self.__field_lines_shapes.add(line)
 
             screen_pos = np.array([x2,y2])
 
@@ -384,7 +402,7 @@ class Window(pyglet.window.Window):
                         arrowhead_side2[0], arrowhead_side2[1],
                         batch=self.field_lines_batch
                     )
-                    self.__field_shapes.add(arrowhead)
+                    self.__field_lines_shapes.add(arrowhead)
 
                     last_arrowhead_pos = screen_pos
 
@@ -392,7 +410,7 @@ class Window(pyglet.window.Window):
 
     def clear_screen(self) -> None:
 
-        self.__field_shapes.clear()
+        self.__field_lines_shapes.clear()
 
     def round_float_pos(self, pos: np.ndarray) -> np.ndarray:
 
@@ -497,6 +515,9 @@ class Controller:
 
     def set_click_mode_delete(self):
         self.__window.set_click_mode_delete()
+
+    def activate_window(self):
+        self.__window.activate()
 
     @staticmethod
     def run_app() -> None:

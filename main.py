@@ -113,6 +113,8 @@ class MainController:
         # N.B. tkinter doesn't like not being on the main thread so I run it on the main thread
 
         self._visualisation_thread.start()
+
+        self.controls_window.after(100, self.visualisation_controller.activate_window)
         self.controls_window.mainloop()
 
         self._visualisation_thread.join()
