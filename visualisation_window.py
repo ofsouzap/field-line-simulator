@@ -246,6 +246,12 @@ class Window(pyglet.window.Window):
         self.field_elements_batch = pyglet.graphics.Batch()
         self.__field_elements_shapes: Set = set()
 
+        self.__preview_ele_pos_gen: Optional[Callable[[np.ndarray], ElementBase]] = None
+        """Function to generate a pre-configured (so doesn't require a MenuWindows.AddElementWindow.Config instance) \
+field element for previewing or None if nothing to preview"""
+        self.field_element_preview_batch = pyglet.graphics.Batch()
+        self.__field_element_preview_shapes: Set = set()
+
         self.add_mode_sprite = pyglet.sprite.Sprite(status_icon_add, x=STATUS_ICON_POSITION[0], y=STATUS_ICON_POSITION[1])
         self.delete_mode_sprite = pyglet.sprite.Sprite(status_icon_delete, x=STATUS_ICON_POSITION[0], y=STATUS_ICON_POSITION[1])
         self.__click_mode_sprite: Optional[pyglet.sprite.Sprite] = None
@@ -408,6 +414,32 @@ class Window(pyglet.window.Window):
 
             prev = curr
 
+    def set_preview_element(self, ele_pos_gen: Optional[Callable[[np.ndarray], ElementBase]]) -> None:
+        self.__preview_ele_pos_gen = ele_pos_gen
+
+    def clear_preview_element(self) -> None:
+        self.set_preview_element(None)
+
+    def __clear_field_element_preview_shapes(self) -> None:
+
+        for shape in self.__field_element_preview_shapes:
+            shape.delete()
+
+        self.__field_element_preview_shapes.clear()
+
+    def __set_field_element_preview_pos(self, posx: int, posy: int) -> None:
+
+        self.__clear_field_element_preview_shapes()
+
+        if self.__preview_ele_pos_gen is not None:
+
+            world_space_pos = np.array([posx, posy], dtype=float) * settings.VIEWPORT_SCALE_FAC
+            ele = self.__preview_ele_pos_gen(world_space_pos)
+
+            renderer = _create_element_renderer(ele)
+
+            self.__field_element_preview_shapes |= renderer.draw(self.clip_bounds, self.field_element_preview_batch)
+
     def clear_screen(self) -> None:
 
         self.__field_lines_shapes.clear()
@@ -427,6 +459,8 @@ class Window(pyglet.window.Window):
 
         self.field_elements_batch.draw()
 
+        self.field_element_preview_batch.draw()
+
         if self.__click_mode_sprite is not None:
             self.__click_mode_sprite.draw()
 
@@ -436,6 +470,10 @@ class Window(pyglet.window.Window):
 
     def on_mouse_press(self, x, y, button, modifiers):
         self.mouse_press_callback(x, y, button, modifiers)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+
+        self.__set_field_element_preview_pos(x, y)
 
     def on_key_release(self, c, all_mods):
 
@@ -488,6 +526,12 @@ class Controller:
 
         self.__window.clear_screen()
         self.__window.draw_field_elements(self.__field)
+
+    def enable_element_preview(self, ele_pos_gen: Callable[[np.ndarray], ElementBase]) -> None:
+        self.__window.set_preview_element(ele_pos_gen)
+
+    def disable_element_preview(self) -> None:
+        self.__window.clear_preview_element()
 
     def add_field_element(self, ele: ElementBase) -> None:
 

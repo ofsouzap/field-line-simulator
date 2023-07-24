@@ -143,12 +143,19 @@ class MainController:
             self.visualisation_controller.set_field(field)
             self.recalculate()
 
+    def set_click_mode_none(self):
+        self.visualisation_controller.set_click_mode_none()
+        self.visualisation_controller.disable_element_preview()
+        self.__click_mode.set_mode_none()
+
     def set_click_mode_add(self, config: AddConfig):
         self.visualisation_controller.set_click_mode_add()
+        self.visualisation_controller.enable_element_preview(config.create_element)
         self.__click_mode.set_mode_add(config)
 
     def set_click_mode_delete(self):
         self.visualisation_controller.set_click_mode_delete()
+        self.visualisation_controller.disable_element_preview()
         self.__click_mode.set_mode_delete()
 
     def open_settings(self):
