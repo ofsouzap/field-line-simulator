@@ -5,7 +5,7 @@ from tkinter import ttk
 from os.path import join as joinpath
 from field_element import ElementBase, PointSource, ChargePlane
 import vectors
-import settings
+from settings import settings
 from shortcuts import RawCommand as KeyPressCommand
 from shortcuts import MOD_CTRL, MOD_SHIFT, MOD_ALT
 import numpy as np

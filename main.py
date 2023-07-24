@@ -10,7 +10,7 @@ from menu_windows import ControlsWindow, AddElementWindow
 from field_file_windows import save_field, load_field
 from shortcuts import Shortcuts, MOD_CTRL, MOD_SHIFT, MOD_ALT
 from shortcuts import Key
-import settings
+from settings import settings, load_settings
 
 
 AddConfig = AddElementWindow.Config
@@ -171,7 +171,7 @@ class MainController:
 
 
 def main():
-    settings.load_settings()
+    load_settings()
     main_controller = MainController()
     main_controller.run()
 

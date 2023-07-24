@@ -5,7 +5,7 @@ from os.path import join as joinpath
 import vectors
 from field import Field
 from field_element import ElementBase, PointSource, ChargePlane
-import settings
+from settings import settings
 from shortcuts import RawCommand as KeyPressCommand
 from shortcuts import MOD_SHIFT, MOD_CTRL, MOD_ALT
 import numpy as np

@@ -2,7 +2,7 @@ from typing import List, Tuple, Optional, Iterator, TextIO
 from field_element import ElementBase, PointSource, ChargePlane
 import numpy as np
 import vectors
-import settings
+from settings import settings
 import re
 
 

@@ -2,8 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Tuple, Optional
 import numpy as np
 import vectors
-from settings import EPS
-import settings
+from settings import settings
+
+
+EPS = settings.EPS
 
 
 # Make sure that the line spawn offset isn't so small that the grad calculation goes over the field element

@@ -2,68 +2,61 @@ from typing import TextIO, Tuple, Any, Optional
 from os.path import isfile
 
 
-__SETTINGS_DEFAULT_FILENAME = "settings.conf"
+_SETTINGS_DEFAULT_FILENAME = "settings.conf"
 
 
-EPS = 1e-6
-VIEWPORT_SCALE_FAC: float = 10
-"""The number of units of distance in the field per pixel of display"""
+class Settings:
 
-show_field_line_arrows: bool = True
-field_line_count_factor: float = 4.0
-field_line_trace_step_distance_screen_space: float = 10
-"""How far to step the field lines each step (in screen space)"""
-field_line_trace_max_step_count: int = 500
-field_line_trace_element_stop_distance_screen_space: float = 1
-"""How far from a field element to stop a field line (in screen space)"""
+    EPS = 1e-6
+    VIEWPORT_SCALE_FAC: float = 10
+    """The number of units of distance in the field per pixel of display"""
 
-field_line_render_arrowhead_spacing: int = 100
-"""The spacing in screen space between arrowheads drawn on field lines"""
+    def __init__(self):
 
-auto_recalcualate: bool = True
+        self.show_field_line_arrows: bool = True
+        self.field_line_count_factor: float = 4.0
+        self.field_line_trace_step_distance_screen_space: float = 10
+        """How far to step the field lines each step (in screen space)"""
+        self.field_line_trace_max_step_count: int = 500
+        self.field_line_trace_element_stop_distance_screen_space: float = 1
+        """How far from a field element to stop a field line (in screen space)"""
 
+        self.field_line_render_arrowhead_spacing: int = 100
+        """The spacing in screen space between arrowheads drawn on field lines"""
 
-def set_default_settings() -> None:
+        self.auto_recalcualate: bool = True
 
-    global show_field_line_arrows
-    global field_line_count_factor
-    global field_line_trace_step_distance_screen_space
-    global field_line_trace_max_step_count
-    global field_line_trace_element_stop_distance_screen_space
-    global field_line_render_arrowhead_spacing
-    global auto_recalcualate
+    def set_default_settings(self) -> None:
 
-    show_field_line_arrows = True
-    field_line_count_factor = 4.0
-    field_line_trace_step_distance_screen_space = 10
-    field_line_trace_max_step_count = 500
-    field_line_trace_element_stop_distance_screen_space = 1
-    field_line_render_arrowhead_spacing = 100
-    auto_recalcualate = True
+        self.show_field_line_arrows = True
+        self.field_line_count_factor = 4.0
+        self.field_line_trace_step_distance_screen_space = 10
+        self.field_line_trace_max_step_count = 500
+        self.field_line_trace_element_stop_distance_screen_space = 1
+        self.field_line_render_arrowhead_spacing = 100
+        self.auto_recalcualate = True
 
+    def __write_setting(self, stream: TextIO, name: str, val):
+        stream.write(f"{name}={str(val)}\n")
 
-def __write_setting(stream: TextIO, name: str, val):
-    stream.write(f"{name}={str(val)}\n")
+    @staticmethod
+    def __str_of_bool(b: bool) -> str:
+        if b:
+            return "True"
+        else:
+            return "False"
 
+    def save_settings(self, filename: str = _SETTINGS_DEFAULT_FILENAME) -> None:
 
-def __str_of_bool(b: bool) -> str:
-    if b:
-        return "True"
-    else:
-        return "False"
+        with open(filename, "w") as file:
 
-
-def save_settings(filename: str = __SETTINGS_DEFAULT_FILENAME) -> None:
-
-    with open(filename, "w") as file:
-
-        __write_setting(file, "show_field_line_arrows", __str_of_bool(show_field_line_arrows))
-        __write_setting(file, "field_line_count_factor", field_line_count_factor)
-        __write_setting(file, "field_line_trace_step_distance_screen_space", field_line_trace_step_distance_screen_space)
-        __write_setting(file, "field_line_trace_max_step_count", field_line_trace_max_step_count)
-        __write_setting(file, "field_line_trace_element_stop_distance_screen_space", field_line_trace_element_stop_distance_screen_space)
-        __write_setting(file, "field_line_render_arrowhead_spacing", field_line_render_arrowhead_spacing)
-        __write_setting(file, "auto_recalcualate", __str_of_bool(auto_recalcualate))
+            self.__write_setting(file, "show_field_line_arrows", self.__str_of_bool(self.show_field_line_arrows))
+            self.__write_setting(file, "field_line_count_factor", self.field_line_count_factor)
+            self.__write_setting(file, "field_line_trace_step_distance_screen_space", self.field_line_trace_step_distance_screen_space)
+            self.__write_setting(file, "field_line_trace_max_step_count", self.field_line_trace_max_step_count)
+            self.__write_setting(file, "field_line_trace_element_stop_distance_screen_space", self.field_line_trace_element_stop_distance_screen_space)
+            self.__write_setting(file, "field_line_render_arrowhead_spacing", self.field_line_render_arrowhead_spacing)
+            self.__write_setting(file, "auto_recalcualate", self.__str_of_bool(self.auto_recalcualate))
 
 
 def __read_setting(stream: TextIO) -> Optional[Tuple[str, Any]]:
@@ -91,19 +84,13 @@ def __read_bool(s: str) -> bool:
         raise ValueError(s)
 
 
-def load_settings(filename: str = __SETTINGS_DEFAULT_FILENAME) -> None:
+def load_settings(filename: str = _SETTINGS_DEFAULT_FILENAME) -> None:
 
-    global show_field_line_arrows
-    global field_line_count_factor
-    global field_line_trace_step_distance_screen_space
-    global field_line_trace_max_step_count
-    global field_line_trace_element_stop_distance_screen_space
-    global field_line_render_arrowhead_spacing
-    global auto_recalcualate
+    global settings
 
     if not isfile(filename):
 
-        set_default_settings()
+        settings.set_default_settings()
 
     else:
 
@@ -122,16 +109,19 @@ def load_settings(filename: str = __SETTINGS_DEFAULT_FILENAME) -> None:
                     name, val = out
 
                     if name == "show_field_line_arrows":
-                        show_field_line_arrows = __read_bool(val)
+                        settings.show_field_line_arrows = __read_bool(val)
                     elif name == "field_line_count_factor":
-                        field_line_count_factor = float(val)
+                        settings.field_line_count_factor = float(val)
                     elif name == "field_line_trace_step_distance_screen_space":
-                        field_line_trace_step_distance_screen_space = float(val)
+                        settings.field_line_trace_step_distance_screen_space = float(val)
                     elif name == "field_line_trace_max_step_count":
-                        field_line_trace_max_step_count = int(val)
+                        settings.field_line_trace_max_step_count = int(val)
                     elif name == "field_line_trace_element_stop_distance_screen_space":
-                        field_line_trace_element_stop_distance_screen_space = float(val)
+                        settings.field_line_trace_element_stop_distance_screen_space = float(val)
                     elif name == "field_line_render_arrowhead_spacing":
-                        field_line_render_arrowhead_spacing = int(val)
+                        settings.field_line_render_arrowhead_spacing = int(val)
                     elif name == "auto_recalcualate":
-                        auto_recalcualate = __read_bool(val)
+                        settings.auto_recalcualate = __read_bool(val)
+
+
+settings = Settings()

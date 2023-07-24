@@ -1,7 +1,10 @@
 from typing import Callable
 import numpy as np
 import vectors
-from settings import EPS
+from settings import settings
+
+
+EPS = settings.EPS
 
 
 def many_dot(a: np.ndarray, b: np.ndarray) -> np.ndarray:
