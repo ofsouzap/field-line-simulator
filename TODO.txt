@@ -1,6 +1,6 @@
 - fix division by 0 errors
 - fix closing the pyglet window
-- adding element preview
+- ESCAPE key to go back to none click mode
 - value input entries for sliders
 ? allow displaying areas of high/low divergence and/or curl of the field
 - eventually, make 3D
