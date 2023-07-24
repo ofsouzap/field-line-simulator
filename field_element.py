@@ -257,7 +257,7 @@ class ChargePlane(ElementBase):
 
     def __get_field_line_spacing(self) -> float:
         """Gets the distance between lines to draw"""
-        return round(50+950*(1-np.tanh(abs(self.strength_density))))
+        return round(10+490*(1-np.tanh(abs(self.strength_density))))
 
     def __get_field_line_starts_2d(self, bounds: np.ndarray, fac: float) -> Tuple[np.ndarray, np.ndarray]:
 
