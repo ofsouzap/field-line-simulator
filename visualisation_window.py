@@ -374,6 +374,9 @@ field element for previewing or None if nothing to preview"""
 
         for curr in points[1:]:
 
+            if np.any(curr == np.inf):
+                break
+
             # If point is repeated (probably meaning the line was clipped) then stop drawing
             if np.all(np.isclose(prev, curr)):
                 break

@@ -271,9 +271,10 @@ When a field line is ended early, the final value before clipping is propagated 
 
         for t in range(0, max_points-1):
 
-            # Stop if no active lines
+            # Stop (after writing final points) if no active lines
 
             if ~np.any(active_mask):
+                lines[:, t+1] = lines[:, t]
                 break
 
             # Calculate next points on lines and find lines to become inactive
