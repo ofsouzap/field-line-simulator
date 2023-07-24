@@ -478,6 +478,12 @@ field element for previewing or None if nothing to preview"""
 
         self.__set_field_element_preview_pos(x, y)
 
+    def on_key_press(self, sym, mods):
+
+        # Stop escape from closing the window
+        if sym == pyglet.window.key.ESCAPE:
+            return pyglet.event.EVENT_HANDLED
+
     def on_key_release(self, c, all_mods):
 
         # Only want to read the modifiers that might be part of a shortcut

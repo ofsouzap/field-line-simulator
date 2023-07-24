@@ -9,6 +9,7 @@ from visualisation_window import Controller as VisualisationController
 from menu_windows import ControlsWindow, AddElementWindow
 from field_file_windows import save_field, load_field
 from shortcuts import Shortcuts, MOD_CTRL, MOD_SHIFT, MOD_ALT
+from shortcuts import Key
 import settings
 
 
@@ -105,6 +106,7 @@ class MainController:
         self.__shortcuts.add_shortcut("X", self.set_click_mode_delete)
         self.__shortcuts.add_shortcut("S", self.controls_window.open_settings_window)
         self.__shortcuts.add_shortcut("R", self.recalculate)
+        self.__shortcuts.add_shortcut(Key.ESCAPE, self.set_click_mode_none)
 
     def run(self):
 
